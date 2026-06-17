@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generative Frost Peaks</title>
+    <style>
+        /* UI/UX Reset y Base - Fondo oscuro para que el gradiente resalte */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #020412; /* Un tono aún más oscuro para dar profundidad */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            color: #BAD5EF;
+        }
+        
+        /* Contenedor de la visualización */
+        .visual-container {
+            position: relative;
+            width: 100vw;
+            height: 60vh; /* Ocupa el 60% de la pantalla para dejar aire arriba y abajo */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        /* Título superpuesto (glassmorphism sutil) */
+        .overlay-info {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            z-index: 10;
+            background: rgba(6, 12, 49, 0.4);
+            backdrop-filter: blur(8px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(186, 213, 239, 0.2);
+        }
+
+        .overlay-info h1 {
+            font-size: 1.5rem;
+            color: #FFFFFF;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .overlay-info p {
+            font-size: 0.85rem;
+            color: #BAD5EF;
+            max-width: 280px;
+            line-height: 1.4;
+        }
+
+        /* El lienzo donde ocurre la magia */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="visual-container">
+        <div class="overlay-info">
+            <h1>Vostok Station, Antarctica</h1>
+            <p>Fluctuaciones anuales de temperatura extrema. Animación generativa basada en registros históricos subcero (-30°C a -89°C).</p>
+        </div>
+        <canvas id="frostCanvas"></canvas>
+    </div>
+
+    <script>
+        // Inicialización del Developer Visual ;)
+        const canvas = document.getElementById('frostCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+
+        // Paleta de colores dictada por UX/UI
+        const colors = {
+            abyss: '#060C31',
+            royal: '#16267E',
+            ice: '#BAD5EF',
+            white: '#FFFFFF'
+        };
+
+        // Generamos un mock de data: 50 puntos de lectura de temperatura en el año
+        // Rango simulado: -30 (más cálido) a -89 (más frío)
+        const generateData = () => {
+            let data = [];
+            for(let i = 0; i < 50; i++) {
+                // Generamos una curva base usando seno para simular estaciones, más ruido aleatorio
+                let season = Math.sin(i / 50 * Math.PI) * 40; 
+                let randomSpike = (Math.random() * 20) - 10;
+                let temp = -30 - season + randomSpike; 
+                // Aseguramos que se mantenga en el rango de -30 a -89
+                data.push(Math.max(-89, Math.min(-30, temp)));
+            }
+            return data;
+        };
+
+        const temperatureData = generateData();
+        let time = 0;
+
+        function resize() {
+            // Ajustar canvas a la resolución real de la pantalla
+            width = canvas.clientWidth;
+            height = canvas.clientHeight;
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Crear el gradiente vertical
+            // Inicia arriba (0) y termina abajo (height)
+            let gradient = ctx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, colors.white);  // Crestas (menos frío)
+            gradient.addColorStop(0.3, colors.ice);
+            gradient.addColorStop(0.7, colors.royal);
+            gradient.addColorStop(1, colors.abyss);  // Profundidad (más frío)
+
+            ctx.beginPath();
+            
+            // Iniciar el trazado desde la esquina inferior izquierda
+            ctx.moveTo(0, height);
+            
+            const segmentWidth = width / (temperatureData.length - 1);
+
+            for (let i = 0; i < temperatureData.length; i++) {
+                const x = i * segmentWidth;
+                
+                // Mapear la temperatura (-89 a -30) a la altura del canvas
+                // -89 será casi abajo (height), -30 será más arriba
+                // Normalizamos el valor entre 0 y 1
+                const normalizedTemp = (temperatureData[i] + 89) / (-30 + 89);
+                
+                // Invertimos para que las temperaturas más frías caigan y las cálidas suban
+                let baseY = height - (normalizedTemp * height * 0.8) - (height * 0.1); 
+                
+                // Añadimos la animación generativa (una oscilación basada en tiempo e índice)
+                // Esto le da el efecto de "viento gélido" respirando
+                let animatedY = baseY + Math.sin(time + i * 0.5) * 15;
+
+                // Si es el primer punto, conectamos directamente
+                if (i === 0) {
+                    ctx.lineTo(x, animatedY);
+                } else {
+                    // Usamos curvas cuadráticas para suavizar ligeramente, o líneas rectas para picos agresivos
+                    // Como pediste "gráfica de picos", lo dejo con líneas rectas y escarpadas para dar agresividad al frío
+                    ctx.lineTo(x, animatedY);
+                }
+            }
+
+            // Cerrar el polígono hacia la esquina inferior derecha
+            ctx.lineTo(width, height);
+            ctx.closePath();
+
+            // Rellenar con el gradiente
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Opcional: línea sutil en el borde superior de los picos
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Avanzar el tiempo para el siguiente frame
+            time += 0.02;
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', resize);
+        
+        // Iniciar
+        resize();
+        draw();
+    </script>
+</body>
+</html>
