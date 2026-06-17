@@ -1,15 +1,15 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frost Gen v2.3 - Crystalline Grid</title>
+    <title>Frost Gen v2.4 - Dynamic Halftone</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
         /* === UI/UX RESET & BASE === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: #02040a;
+            background-color: #000000; /* Fondo puramente negro para el contraste del halftone */
             color: #FFFFFF;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
@@ -23,15 +23,14 @@
             position: relative;
             width: 100vw;
             height: 100vh;
-            background-color: #02040a;
+            background-color: #000000;
         }
 
-        /* Canvas nítido, sin blur, para el efecto cristal */
+        /* Canvas nítido para los puntos */
         canvas {
             display: block;
             width: 100%;
             height: 100%;
-            image-rendering: crisp-edges;
         }
 
         /* === INTERFAZ DE USUARIO (Mantenida Verbatim) === */
@@ -39,7 +38,7 @@
             position: absolute;
             top: 1.5rem;
             left: 1.5rem;
-            background: rgba(2, 4, 18, 0.4);
+            background: rgba(2, 4, 18, 0.5);
             backdrop-filter: blur(12px);
             padding: 0.8rem 1.2rem;
             border-radius: 8px;
@@ -55,7 +54,7 @@
             bottom: 2.5rem;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(6, 12, 49, 0.35);
+            background: rgba(6, 12, 49, 0.4);
             backdrop-filter: blur(20px);
             padding: 1.8rem;
             border-radius: 16px;
@@ -67,7 +66,7 @@
             z-index: 10;
             width: 90%;
             max-width: 900px;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.6);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
         }
 
         .panel-left {
@@ -130,7 +129,7 @@
         }
 
         button {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.08);
             color: rgba(218, 235, 255, 0.9);
             border: 1px solid rgba(186, 213, 239, 0.25);
             padding: 0.6rem 1rem;
@@ -143,7 +142,7 @@
         }
 
         button:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.2);
             color: #FFFFFF;
             border-color: rgba(255, 255, 255, 0.8);
         }
@@ -165,7 +164,7 @@
 <body>
 
     <div class="visual-container">
-        <div class="header-title">Vostok Station, Antarctica | Frost Gen v2.3</div>
+        <div class="header-title">Vostok Station, Antarctica | Frost Gen v2.4</div>
         <canvas id="fluidCanvas"></canvas>
         <div class="ui-panel">
             <div class="panel-left">
@@ -195,54 +194,24 @@
         let width, height;
         let time = 0;
 
-        // Tamaño del bloque de cristal (ajusta esto para más o menos pixeles)
-        const blockSize = 18; 
-
-        // Paleta de altísimo contraste
+        // === CONFIGURACIÓN DEL HALFTONE ===
+        // Distancia entre los centros de los puntos
+        const gridSpacing = 22; 
+        
+        // Paleta base (el fondo será siempre negro #000000 para el contraste máximo)
         const palette = [
-            '#010208', // Negro abisal
-            '#060C31', // Azul oscuro
+            '#060C31', // Azul muy oscuro (puntos pequeños)
             '#16267E', // Royal
             '#3a6fd9', // Azul eléctrico
-            '#BAD5EF', // Hielo
-            '#ffffff'  // Blanco puro reluciente
+            '#BAD5EF', // Hielo (puntos grandes)
+            '#ffffff'  // Blanco puro (puntos fusionados)
         ];
 
-        // Canvas secundario para pre-renderizar el bisel de cristal (Optimización extrema)
-        const overlayCanvas = document.createElement('canvas');
-        const overCtx = overlayCanvas.getContext('2d');
-
-        function buildGlassOverlay() {
-            overlayCanvas.width = width;
-            overlayCanvas.height = height;
-            overCtx.clearRect(0, 0, width, height);
-
-            for (let x = 0; x < width; x += blockSize) {
-                for (let y = 0; y < height; y += blockSize) {
-                    // Reflejo de luz (Arriba y a la izquierda)
-                    overCtx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-                    overCtx.fillRect(x, y, blockSize, 2); // Top
-                    overCtx.fillRect(x, y, 2, blockSize); // Left
-                    
-                    // Sombra (Abajo y a la derecha)
-                    overCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                    overCtx.fillRect(x, y + blockSize - 2, blockSize, 2); // Bottom
-                    overCtx.fillRect(x + blockSize - 2, y, 2, blockSize); // Right
-
-                    // Toque extra de oscuridad en el centro para dar profundidad
-                    overCtx.fillStyle = 'rgba(0, 0, 20, 0.1)';
-                    overCtx.fillRect(x + 2, y + 2, blockSize - 4, blockSize - 4);
-                }
-            }
-        }
-
         function resize() {
-            // Trabajamos a resolución completa, pero renderizamos en bloques grandes
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
-            buildGlassOverlay();
         }
         window.addEventListener('resize', resize);
         resize();
@@ -251,44 +220,50 @@
             tempDisplay.textContent = `${e.target.value}°C`;
         });
 
-        // === MOTOR GENERATIVO DE BLOQUES DE CRISTAL ===
+        // === MOTOR GENERATIVO HALFTONE ===
         function draw() {
-            ctx.fillStyle = palette[0];
+            // Fondo negro absoluto para resaltar los puntos luminosos
+            ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, width, height);
 
             let tempValue = Math.abs(parseInt(tempSlider.value)); 
             let coldFactor = tempValue / 89; // 0 a 1
 
-            // Dibujamos la cuadrícula bloque por bloque
-            for (let x = 0; x < width; x += blockSize) {
-                for (let y = 0; y < height; y += blockSize) {
+            // Recorremos la cuadrícula
+            for (let x = 0; x < width + gridSpacing; x += gridSpacing) {
+                for (let y = 0; y < height + gridSpacing; y += gridSpacing) {
                     
-                    // Ondas que definen el patrón general
-                    let wave1 = Math.sin((x * 0.003) + (time * 0.8)) * 100;
-                    let wave2 = Math.cos((y * 0.005) - (time * 1.2)) * 80;
+                    // Matemáticas fluidas orgánicas (crean manchas tipo metaballs)
+                    let wave1 = Math.sin((x * 0.004) + (time * 0.9));
+                    let wave2 = Math.cos((y * 0.005) - (time * 1.1));
+                    let wave3 = Math.sin(((x + y) * 0.003) + (time * 0.5));
                     
-                    // Flujo distorsionado vertical
-                    let flow = Math.sin((x + wave2) * 0.008) + Math.cos((y + wave1) * 0.008 - time);
+                    // Combinamos las ondas (-3 a 3) y normalizamos (0 a 1)
+                    let rawIntensity = wave1 + wave2 + wave3;
+                    let intensity = (rawIntensity + 3) / 6;
                     
-                    // Normalizar flujo (aproximadamente de -2 a 2 -> mapear a 0 a 1)
-                    let intensity = (flow + 2) / 4;
+                    // El frío contrae el fluido (hace que haya más negro)
+                    intensity -= (coldFactor * 0.35);
                     
-                    // Reaccionar al Slider (Enfriar empuja a los azules oscuros)
-                    intensity -= (coldFactor * 0.5);
-                    
-                    // Asegurar límites
+                    // Limitamos la intensidad entre 0 y 1
                     intensity = Math.max(0, Math.min(0.99, intensity));
 
-                    // Mapeo abrupto al color de la paleta (Quantized color)
+                    // Si la intensidad es muy baja, no dibujamos nada (ahorra GPU y crea vacíos negros)
+                    if (intensity < 0.1) continue;
+
+                    // El radio máximo es mayor que el espaciado para que los puntos se solapen en zonas intensas
+                    let maxRadius = gridSpacing * 0.75; 
+                    let radius = intensity * maxRadius;
+
+                    // Asignamos color basado en la intensidad
                     let colorIndex = Math.floor(intensity * palette.length);
                     
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
                     ctx.fillStyle = palette[colorIndex];
-                    ctx.fillRect(x, y, blockSize, blockSize);
+                    ctx.fill();
                 }
             }
-
-            // Aplicamos la textura pre-renderizada de cristal sobre todo el canvas
-            ctx.drawImage(overlayCanvas, 0, 0);
 
             // Velocidad reactiva
             time += 0.015 + (coldFactor * 0.01); 
@@ -296,7 +271,7 @@
         }
         draw();
 
-        // === SISTEMA DE EXPORTACIÓN ADAPTADO ===
+        // === SISTEMA DE EXPORTACIÓN ===
         function exportImage(ratioStr) {
             const tempCanvas = document.createElement('canvas');
             const tCtx = tempCanvas.getContext('2d');
@@ -320,11 +295,10 @@
             let sX = (realW - cropWidth) / 2;
             let sY = (realH - cropHeight) / 2;
             
-            // Ya no hace falta añadir ruido, la textura de cristal ya está en el render
             tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH);
 
             const link = document.createElement('a');
-            link.download = `frost_crystal_${ratioStr.replace(':','x')}.png`;
+            link.download = `frost_halftone_${ratioStr.replace(':','x')}.png`;
             link.href = tempCanvas.toDataURL('image/png', 1.0);
             link.click();
         }
@@ -351,7 +325,7 @@
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = `frost_crystal_loop.webm`;
+                link.download = `frost_halftone_loop.webm`;
                 link.href = url;
                 link.click();
                 URL.revokeObjectURL(url);
@@ -377,14 +351,13 @@
             btn.textContent = "⏳ Procesando...";
 
             const gifCanvas = document.createElement('canvas');
-            // Mantenemos tamaño controlado para GIFs rápidos
             gifCanvas.width = 480; 
             gifCanvas.height = 320;
             const gCtx = gifCanvas.getContext('2d');
 
             const gif = new GIF({
                 workers: 2,
-                quality: 6, // Calidad un poco más baja para compensar el detalle de la grid
+                quality: 6,
                 width: 480,
                 height: 320,
                 workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
@@ -409,7 +382,7 @@
             gif.on('finished', function(blob) {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = 'frost_crystal.gif';
+                link.download = 'frost_halftone.gif';
                 link.href = url;
                 link.click();
                 
