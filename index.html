@@ -1,9 +1,9 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frost Gen v2.1 - Vertical Halftone</title>
+    <title>Frost Gen v2.2 - Ultra Liquid Gradient</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
         /* === UI/UX RESET & BASE === */
@@ -19,81 +19,71 @@
             align-items: center;
         }
 
-        /* === CONTENEDORES === */
+        /* === CONTENEDOR PRINCIPAL === */
         .visual-container {
             position: relative;
             width: 100vw;
             height: 100vh;
+            background-color: #020412;
         }
 
-        /* Canvas estirado para maximizar el efecto blur natural */
         canvas {
             display: block;
             width: 100%;
             height: 100%;
-            object-fit: cover;
         }
 
-        /* === TEXTURAS (Halftone + Grano Analógico) === */
-        .texture-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            /* Patrón de puntos Semitono */
-            background-image: radial-gradient(rgba(2, 4, 18, 0.4) 1px, transparent 1px);
-            background-size: 4px 4px;
-            mix-blend-mode: overlay;
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        /* === INTERFAZ DE USUARIO === */
+        /* === INTERFAZ DE USUARIO (GLASSMORPHISM TOP) === */
         .header-title {
             position: absolute;
             top: 1.5rem;
             left: 1.5rem;
-            background: rgba(6, 12, 49, 0.3);
-            backdrop-filter: blur(10px);
+            background: rgba(2, 4, 18, 0.25);
+            backdrop-filter: blur(12px);
             padding: 0.8rem 1.2rem;
             border-radius: 8px;
-            border: 1px solid rgba(186, 213, 239, 0.15);
-            font-size: 1rem;
+            border: 1px solid rgba(186, 213, 239, 0.1);
+            font-size: 0.9rem;
             font-weight: 500;
             letter-spacing: 0.5px;
             z-index: 10;
         }
 
+        /* === PANEL DE CONTROL DE DISEÑO (BOTTOM) === */
         .ui-panel {
             position: absolute;
-            bottom: 2rem;
+            bottom: 2.5rem;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(6, 12, 49, 0.4);
-            backdrop-filter: blur(16px);
-            padding: 1.5rem;
+            background: rgba(6, 12, 49, 0.25);
+            backdrop-filter: blur(20px);
+            padding: 1.8rem;
             border-radius: 16px;
-            border: 1px solid rgba(186, 213, 239, 0.2);
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            z-index: 10;
-            width: 90%;
-            max-width: 650px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-        }
-
-        /* Layout interno del panel */
-        .panel-top {
+            border: 1px solid rgba(186, 213, 239, 0.15);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 2rem;
+            gap: 2.5rem;
+            z-index: 10;
+            width: 90%;
+            max-width: 900px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.5);
+        }
+
+        /* Bloque Izquierdo: Temperatura */
+        .panel-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-grow: 1;
         }
 
         .temp-display {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: 300;
-            min-width: 120px;
-            text-shadow: 0 2px 10px rgba(186, 213, 239, 0.3);
+            min-width: 140px;
+            letter-spacing: -1px;
+            text-shadow: 0 4px 12px rgba(186, 213, 239, 0.2);
         }
 
         .slider-wrapper {
@@ -101,55 +91,62 @@
             display: flex;
             align-items: center;
             gap: 1rem;
-            position: relative;
         }
 
         .slider-wrapper span {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #BAD5EF;
-            opacity: 0.8;
+            opacity: 0.6;
+            font-weight: 600;
         }
 
         input[type=range] {
             flex-grow: 1;
             -webkit-appearance: none;
-            height: 6px;
-            background: linear-gradient(to right, #060C31, #BAD5EF, #FFFFFF);
-            border-radius: 3px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
             outline: none;
         }
         
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px; height: 30px; /* Thumb más rectangular y elegante */
-            border-radius: 4px;
+            width: 12px; height: 24px;
+            border-radius: 3px;
             background: #FFFFFF;
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(255,255,255,0.6);
+            box-shadow: 0 0 15px rgba(255,255,255,0.8);
+            transition: transform 0.1s ease;
         }
 
-        .export-controls {
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+
+        /* Bloque Derecho: Controles Grid */
+        .panel-right {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0.8rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.6rem;
+            min-width: 260px;
         }
 
         button {
-            background: rgba(255, 255, 255, 0.05);
-            color: #BAD5EF;
-            border: 1px solid rgba(186, 213, 239, 0.3);
-            padding: 0.7rem;
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(218, 235, 255, 0.8);
+            border: 1px solid rgba(186, 213, 239, 0.2);
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.3s ease;
+            font-size: 0.8rem;
+            transition: all 0.25s ease;
             text-align: center;
         }
 
         button:hover {
-            background: rgba(186, 213, 239, 0.2);
+            background: rgba(255, 255, 255, 0.1);
             color: #FFFFFF;
-            border-color: #FFFFFF;
+            border-color: rgba(255, 255, 255, 0.6);
         }
 
         button.recording {
@@ -161,22 +158,20 @@
 
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
+            50% { transform: scale(1.03); }
             100% { transform: scale(1); }
         }
-
     </style>
 </head>
 <body>
 
     <div class="visual-container">
-        <div class="header-title">Vostok Station, Antarctica | Frost Gen v2.1</div>
+        <div class="header-title">Vostok Station, Antarctica | Frost Gen v2.2</div>
         
         <canvas id="fluidCanvas"></canvas>
-        <div class="texture-overlay"></div>
         
         <div class="ui-panel">
-            <div class="panel-top">
+            <div class="panel-left">
                 <div class="temp-display" id="tempDisplay">-45°C</div>
                 <div class="slider-wrapper">
                     <span>-89</span>
@@ -185,9 +180,9 @@
                 </div>
             </div>
             
-            <div class="export-controls">
-                <button onclick="exportImage('16:9')">📷 Img 16:9</button>
-                <button onclick="exportImage('3:4')">📷 Img 3:4</button>
+            <div class="panel-right">
+                <button onclick="exportImage('16:9')">📸 Img 16:9</button>
+                <button onclick="exportImage('3:4')">📸 Img 3:4</button>
                 <button onclick="exportGIF()" id="btnGif">🎞️ Export GIF</button>
                 <button onclick="exportVideo()" id="btnVideo">🎥 Export WebM</button>
             </div>
@@ -203,113 +198,149 @@
         let width, height;
         let time = 0;
 
-        // Paleta base
-        const colors = {
-            abyss: '#060C31',
-            royal: '#16267E',
-            ice: '#BAD5EF',
-            white: '#FFFFFF'
-        };
+        // === PALETA CROMÁTICA EXPANDIDA (8 Escalas de Oscuro a Claro) ===
+        const palette = [
+            '#020412', // Base Abisal Extrema
+            '#060C31', // Tu color 1
+            '#0d174d', // Transición Oscura
+            '#16267E', // Tu color 2
+            '#4361ab', // Azul Glaciar Medio
+            '#7ba4cf', // Azul Escarcha Transición
+            '#BAD5EF', // Tu color 3
+            '#FFFFFF'  // Tu color 4 (Luz Máxima)
+        ];
+
+        // Canvas de ruido estático precargado para rendimiento
+        const noiseCanvas = document.createElement('canvas');
+        const noiseCtx = noiseCanvas.getContext('2d');
+        
+        function initNoise() {
+            noiseCanvas.width = 250;
+            noiseCanvas.height = 250;
+            const imgData = noiseCtx.createImageData(250, 250);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                let val = Math.random() * 255;
+                data[i] = val;
+                data[i+1] = val;
+                data[i+2] = val;
+                data[i+3] = 255; // Opacidad total interna
+            }
+            noiseCtx.putImageData(imgData, 0, 0);
+        }
+        initNoise();
 
         function resize() {
-            // Reducimos la resolución interna a la mitad para mejorar el rendimiento del blur
-            // El CSS se encargará de estirarlo, dando un blur natural extra.
-            width = window.innerWidth / 1.5;
-            height = window.innerHeight / 1.5;
+            // Bajamos resolución interna a /2 para permitir un desenfoque (blur) masivo de 100px super fluido
+            width = window.innerWidth / 2;
+            height = window.innerHeight / 2;
             canvas.width = width;
             canvas.height = height;
         }
         window.addEventListener('resize', resize);
         resize();
 
-        // Actualizar UI
         tempSlider.addEventListener('input', (e) => {
             tempDisplay.textContent = `${e.target.value}°C`;
         });
 
-        // --- SISTEMA GENERATIVO VERTICAL ---
+        // === MOTOR GENERATIVO LÍQUIDO CON ONDAS MARCADAS ===
         function draw() {
-            ctx.fillStyle = colors.abyss;
+            ctx.fillStyle = palette[0];
             ctx.fillRect(0, 0, width, height);
 
             let tempValue = Math.abs(parseInt(tempSlider.value)); 
-            let coldFactor = tempValue / 89; // 0 (Blanco/Ice) a 1 (Abyss/Royal)
+            let coldFactor = tempValue / 89; // 0 (Cálido/Blanco) a 1 (Frío Extremo/Azul)
 
-            // Aplicamos un desenfoque extremo para lograr el efecto "líquido/gradiente fotográfico"
-            ctx.filter = 'blur(50px)';
+            // Filtro de desenfoque masivo para fundir los colores como fotografía analógica
+            ctx.filter = 'blur(95px)';
 
-            // Dibujamos bandas verticales que ondulan de izquierda a derecha
-            const bands = 5;
-            for (let i = 0; i <= bands; i++) {
+            // Dibujamos capas horizontales onduladas apiladas verticalmente
+            const layers = 6;
+            for (let i = 0; i < layers; i++) {
                 ctx.beginPath();
                 
-                // Empezamos arriba
-                let startX = (width / bands) * i;
-                ctx.moveTo(startX, -50);
-
-                // Bajamos por el eje Y
-                for (let y = 0; y <= height + 50; y += 40) {
-                    // Matemáticas para el viento vertical
-                    let wave1 = Math.sin((y * 0.003) - (time * 0.8) + i) * 150;
-                    let wave2 = Math.cos((y * 0.005) + (time * 1.2) - i) * 80 * coldFactor;
-                    
-                    ctx.lineTo(startX + wave1 + wave2, y);
-                }
+                // Posición base vertical de la capa
+                let baseY = (height / (layers - 1)) * i;
                 
-                // Cerramos la forma hacia la izquierda para rellenar
-                ctx.lineTo(0, height + 50);
-                ctx.lineTo(0, -50);
+                ctx.moveTo(-50, height + 100); // Empezar abajo a la izquierda fuera de rango
+                ctx.lineTo(-50, baseY);
+
+                // Recorremos horizontalmente creando ondas MUY marcadas (Amplitud extendida)
+                for (let x = -50; x <= width + 50; x += 30) {
+                    // Frecuencias y velocidades combinadas para distorsión agresiva
+                    let wave1 = Math.sin((x * 0.006) + time + (i * 0.7)) * 110; 
+                    let wave2 = Math.cos((x * 0.012) - (time * 1.5)) * 50 * (1 - coldFactor * 0.4);
+                    
+                    // Modificador reactivo al slider: el frío aplana o agita ciertas masas térmicas
+                    let y = baseY + wave1 + wave2 + (coldFactor * 60 * Math.sin(time + i));
+                    ctx.lineTo(x, y);
+                }
+
+                ctx.lineTo(width + 50, height + 100);
                 ctx.closePath();
 
-                // Lógica de color según el slider
-                let gradientColors = [colors.white, colors.ice, colors.royal, colors.abyss];
-                // Mientras más frío, el índice de color se mueve hacia los oscuros
-                let colorIndex = Math.min(3, Math.floor((i / bands) * 2 + (coldFactor * 2)));
+                // Selección dinámica de color en base al slider y al orden de capas
+                let colorIndex = Math.min(palette.length - 1, Math.floor((i / layers) * 4 + (coldFactor * 3.5)));
+                ctx.fillStyle = palette[palette.length - 1 - colorIndex];
                 
-                ctx.fillStyle = gradientColors[colorIndex];
-                ctx.globalAlpha = 0.6 + (Math.sin(time + i) * 0.2); // Parpadeo suave
+                // Variación de opacidad orgánica
+                ctx.globalAlpha = 0.7 + (Math.sin(time + i) * 0.1);
                 ctx.fill();
             }
 
-            // Añadir un destello central blanco/celeste si hace menos frío
-            if (coldFactor < 0.6) {
-                ctx.beginPath();
-                ctx.arc(width/2 + Math.sin(time)*50, height/2, width/3, 0, Math.PI * 2);
-                ctx.fillStyle = colors.ice;
-                ctx.globalAlpha = 0.3 * (1 - coldFactor);
-                ctx.fill();
+            // Quitar filtro para aplicar el grano nítido encima
+            ctx.filter = 'none';
+            ctx.globalAlpha = 1.0;
+
+            // === APLICACIÓN DE RUIDO REACTIVO AL MOVIMIENTO ===
+            // Incrementamos la opacidad del grano si hace más frío o si hay más turbulencia simulada
+            let noiseOpacity = 0.04 + (coldFactor * 0.04) + (Math.sin(time * 2) * 0.01);
+            ctx.globalAlpha = noiseOpacity;
+            ctx.globalCompositeOperation = 'overlay';
+
+            // Hacemos que el ruido "baile" cambiando el offset aleatoriamente en cada frame
+            let noiseX = Math.floor(Math.random() * 100);
+            let noiseY = Math.floor(Math.random() * 100);
+
+            // Rellenamos la pantalla con el patrón de ruido
+            for (let x = 0; x < width; x += 250) {
+                for (let y = 0; y < height; y += 250) {
+                    ctx.drawImage(noiseCanvas, x - noiseX, y - noiseY);
+                }
             }
 
-            ctx.filter = 'none'; // Resetear filtro por seguridad
+            // Resetear modos normales del canvas
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = 1.0;
 
-            // Velocidad base + incremento si hace más frío
-            time += 0.015 + (coldFactor * 0.01); 
+            // Velocidad de animación reactiva (más frío = partículas y ondas se aceleran)
+            time += 0.012 + (coldFactor * 0.015); 
             requestAnimationFrame(draw);
         }
         draw();
 
-        // --- SISTEMA DE EXPORTACIÓN ---
+        // === SISTEMA DE EXPORTACIÓN REPOSITORIO GITHUB ===
 
-        // Función auxiliar para dibujar el semitono en el canvas exportado
-        function applyHalftoneToCanvas(exportCtx, w, h) {
-            exportCtx.fillStyle = 'rgba(2, 4, 18, 0.3)';
-            for(let x = 0; x < w; x += 4) {
-                for(let y = 0; y < h; y += 4) {
-                    if((x/4 + y/4) % 2 === 0) {
-                        exportCtx.fillRect(x, y, 2, 2);
-                    }
+        // Inyecta el ruido nítido directamente en los renders de descarga
+        function applyNoiseToExport(exportCtx, w, h, factor) {
+            exportCtx.save();
+            exportCtx.globalAlpha = 0.05 + (factor * 0.04);
+            exportCtx.globalCompositeOperation = 'overlay';
+            for (let x = 0; x < w; x += 250) {
+                for (let y = 0; y < h; y += 250) {
+                    exportCtx.drawImage(noiseCanvas, x, y);
                 }
             }
+            exportCtx.restore();
         }
 
         function exportImage(ratioStr) {
             const tempCanvas = document.createElement('canvas');
             const tCtx = tempCanvas.getContext('2d');
             
-            // Trabajamos sobre la resolución real de la pantalla para el export
             let realW = window.innerWidth;
             let realH = window.innerHeight;
-
             let rW = ratioStr === '16:9' ? 16 : 3;
             let rH = ratioStr === '16:9' ? 9 : 4;
 
@@ -327,14 +358,14 @@
             let sX = (realW - cropWidth) / 2;
             let sY = (realH - cropHeight) / 2;
             
-            // Dibujar el estado actual (estirándolo desde nuestra resolución interna optimizada)
+            // Renderizar frame actual a tamaño completo
             tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH);
             
-            // Aplicar el efecto analógico directo a la imagen
-            applyHalftoneToCanvas(tCtx, cropWidth, cropHeight);
+            let factor = Math.abs(parseInt(tempSlider.value)) / 89;
+            applyNoiseToExport(tCtx, cropWidth, cropHeight, factor);
 
             const link = document.createElement('a');
-            link.download = `frost_gen_${ratioStr.replace(':','x')}.png`;
+            link.download = `frost_liquid_${ratioStr.replace(':','x')}.png`;
             link.href = tempCanvas.toDataURL('image/png', 1.0);
             link.click();
         }
@@ -361,7 +392,7 @@
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = `frost_gen_loop.webm`;
+                link.download = `frost_liquid_loop.webm`;
                 link.href = url;
                 link.click();
                 URL.revokeObjectURL(url);
@@ -376,7 +407,7 @@
 
         function exportGIF() {
             if (typeof GIF === 'undefined') {
-                alert("GIF.js cargando, espera un segundo.");
+                alert("GIF.js se está inicializando en segundo plano. Intenta de nuevo.");
                 return;
             }
             
@@ -384,37 +415,35 @@
             if (btn.classList.contains('recording')) return;
             
             btn.classList.add('recording');
-            btn.textContent = "⏳ Generando...";
+            btn.textContent = "⏳ Procesando...";
 
             const gifCanvas = document.createElement('canvas');
-            // Mantenemos el GIF pequeño (400x300) para evitar archivos gigantes
-            gifCanvas.width = 400; 
-            gifCanvas.height = 300;
+            gifCanvas.width = 450; 
+            gifCanvas.height = 320;
             const gCtx = gifCanvas.getContext('2d');
 
             const gif = new GIF({
                 workers: 2,
-                quality: 10,
-                width: 400,
-                height: 300,
+                quality: 8,
+                width: 450,
+                height: 320,
                 workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
             });
 
             let framesCaptured = 0;
-            const maxFrames = 45; // 1.5 segundos a 30fps
+            const maxFrames = 40; 
+            let factor = Math.abs(parseInt(tempSlider.value)) / 89;
 
             function captureFrame() {
-                gCtx.drawImage(canvas, 0, 0, 400, 300);
-                // Aplicamos semitono sutil al GIF
-                applyHalftoneToCanvas(gCtx, 400, 300);
-
-                gif.addFrame(gCtx, {copy: true, delay: 33});
+                gCtx.drawImage(canvas, 0, 0, 450, 320);
+                applyNoiseToExport(gCtx, 450, 320, factor);
+                gif.addFrame(gCtx, {copy: true, delay: 35});
                 
                 framesCaptured++;
                 if(framesCaptured < maxFrames) {
                     requestAnimationFrame(captureFrame);
                 } else {
-                    btn.textContent = "⚙️ Procesando...";
+                    btn.textContent = "⚙️ Renderizando...";
                     gif.render();
                 }
             }
@@ -422,7 +451,7 @@
             gif.on('finished', function(blob) {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = 'frost_gen.gif';
+                link.download = 'frost_liquid.gif';
                 link.href = url;
                 link.click();
                 
