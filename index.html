@@ -3,189 +3,358 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generative Frost Peaks</title>
+    <title>Generative Frost - Halftone Fluid</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
-        /* UI/UX Reset y Base - Fondo oscuro para que el gradiente resalte */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: #020412; /* Un tono aún más oscuro para dar profundidad */
+            background-color: #020412;
+            color: #FFFFFF;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
-            color: #BAD5EF;
         }
-        
-        /* Contenedor de la visualización */
+
+        /* Contenedor Principal */
         .visual-container {
             position: relative;
             width: 100vw;
-            height: 60vh; /* Ocupa el 60% de la pantalla para dejar aire arriba y abajo */
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
+            height: 100vh;
         }
 
-        /* Título superpuesto (glassmorphism sutil) */
-        .overlay-info {
-            position: absolute;
-            top: 2rem;
-            left: 2rem;
-            z-index: 10;
-            background: rgba(6, 12, 49, 0.4);
-            backdrop-filter: blur(8px);
-            padding: 1.5rem;
-            border-radius: 12px;
-            border: 1px solid rgba(186, 213, 239, 0.2);
-        }
-
-        .overlay-info h1 {
-            font-size: 1.5rem;
-            color: #FFFFFF;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-
-        .overlay-info p {
-            font-size: 0.85rem;
-            color: #BAD5EF;
-            max-width: 280px;
-            line-height: 1.4;
-        }
-
-        /* El lienzo donde ocurre la magia */
+        /* Canvas Base */
         canvas {
             display: block;
             width: 100%;
             height: 100%;
+        }
+
+        /* Efecto Halftone (Semitono) superpuesto con CSS puro para rendimiento */
+        .halftone-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(circle, #020412 1px, transparent 1px);
+            background-size: 4px 4px;
+            mix-blend-mode: overlay;
+            opacity: 0.6;
+            pointer-events: none; /* Para que no bloquee los clicks */
+        }
+
+        /* Interfaz de Usuario (Glassmorphism) */
+        .ui-panel {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(6, 12, 49, 0.6);
+            backdrop-filter: blur(12px);
+            padding: 1.5rem 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(186, 213, 239, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            z-index: 10;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Slider de Temperatura */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .slider-label { font-weight: bold; width: 60px; text-align: right; }
+        input[type=range] {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: linear-gradient(to right, #060C31, #BAD5EF);
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        /* Botones de Exportación */
+        .export-controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            color: #BAD5EF;
+            border: 1px solid #BAD5EF;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            flex-grow: 1;
+            text-align: center;
+        }
+        button:hover {
+            background: #BAD5EF;
+            color: #060C31;
+            font-weight: bold;
+        }
+        button.recording {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
 <body>
 
     <div class="visual-container">
-        <div class="overlay-info">
-            <h1>Vostok Station, Antarctica</h1>
-            <p>Fluctuaciones anuales de temperatura extrema. Animación generativa basada en registros históricos subcero (-30°C a -89°C).</p>
+        <canvas id="fluidCanvas"></canvas>
+        <div class="halftone-overlay"></div>
+        
+        <div class="ui-panel">
+            <div class="slider-container">
+                <span class="slider-label" id="tempDisplay">0°C</span>
+                <input type="range" id="tempSlider" min="-89" max="0" value="0">
+            </div>
+            <div class="export-controls">
+                <button onclick="exportImage('16:9')">📸 Img 16:9</button>
+                <button onclick="exportImage('3:4')">📸 Img 3:4</button>
+                <button onclick="exportGIF()" id="btnGif">🎞️ Export GIF</button>
+                <button onclick="exportVideo()" id="btnVideo">🎥 Export Video (WebM)</button>
+            </div>
         </div>
-        <canvas id="frostCanvas"></canvas>
     </div>
 
     <script>
-        // Inicialización del Developer Visual ;)
-        const canvas = document.getElementById('frostCanvas');
+        const canvas = document.getElementById('fluidCanvas');
         const ctx = canvas.getContext('2d');
-
+        const tempSlider = document.getElementById('tempSlider');
+        const tempDisplay = document.getElementById('tempDisplay');
+        
         let width, height;
-
-        // Paleta de colores dictada por UX/UI
-        const colors = {
-            abyss: '#060C31',
-            royal: '#16267E',
-            ice: '#BAD5EF',
-            white: '#FFFFFF'
-        };
-
-        // Generamos un mock de data: 50 puntos de lectura de temperatura en el año
-        // Rango simulado: -30 (más cálido) a -89 (más frío)
-        const generateData = () => {
-            let data = [];
-            for(let i = 0; i < 50; i++) {
-                // Generamos una curva base usando seno para simular estaciones, más ruido aleatorio
-                let season = Math.sin(i / 50 * Math.PI) * 40; 
-                let randomSpike = (Math.random() * 20) - 10;
-                let temp = -30 - season + randomSpike; 
-                // Aseguramos que se mantenga en el rango de -30 a -89
-                data.push(Math.max(-89, Math.min(-30, temp)));
-            }
-            return data;
-        };
-
-        const temperatureData = generateData();
         let time = 0;
+        let animationFrameId;
+
+        // Paleta base
+        const colors = ['#060C31', '#16267E', '#BAD5EF', '#FFFFFF'];
 
         function resize() {
-            // Ajustar canvas a la resolución real de la pantalla
-            width = canvas.clientWidth;
-            height = canvas.clientHeight;
-            canvas.width = width * window.devicePixelRatio;
-            canvas.height = height * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
         }
+        window.addEventListener('resize', resize);
+        resize();
 
+        // Actualizar UI del slider
+        tempSlider.addEventListener('input', (e) => {
+            tempDisplay.textContent = `${e.target.value}°C`;
+        });
+
+        // Loop Visual Generativo (Fluidos Verticales)
         function draw() {
-            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#020412';
+            ctx.fillRect(0, 0, width, height);
 
-            // Crear el gradiente vertical
-            // Inicia arriba (0) y termina abajo (height)
-            let gradient = ctx.createLinearGradient(0, 0, 0, height);
-            gradient.addColorStop(0, colors.white);  // Crestas (menos frío)
-            gradient.addColorStop(0.3, colors.ice);
-            gradient.addColorStop(0.7, colors.royal);
-            gradient.addColorStop(1, colors.abyss);  // Profundidad (más frío)
+            let tempValue = Math.abs(parseInt(tempSlider.value)); // De 0 a 89
+            let coldFactor = tempValue / 89; // 0 (Cálido/Blanco) a 1 (Frío/Azul oscuro)
 
-            ctx.beginPath();
+            // Dibujar varias capas de ondas fluidas (simulando la referencia)
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, height);
+
+                let waveHeight = height * 0.4 + (i * 100);
+                
+                for (let x = 0; x <= width; x += 20) {
+                    // Matemáticas para ondas reactivas al tiempo y al slider
+                    let noise = Math.sin((x * 0.005) + time + (i * 0.5)) * Math.cos((x * 0.01) - time);
+                    let y = height - waveHeight + (noise * 150) + (coldFactor * 200 * (i%2===0?-1:1));
+                    ctx.lineTo(x, y);
+                }
+                
+                ctx.lineTo(width, height);
+                ctx.lineTo(0, height);
+                ctx.closePath();
+
+                // Interpolar colores según la temperatura
+                // Si hace más frío (coldFactor alto), usamos los colores oscuros de la paleta
+                let colorIndex = Math.floor(coldFactor * 3); 
+                let baseColor = colors[Math.min(i + colorIndex, 3)];
+                
+                ctx.fillStyle = baseColor;
+                ctx.globalAlpha = 0.8;
+                ctx.fill();
+            }
+
+            time += 0.01 + (coldFactor * 0.02); // Más frío = movimiento ligeramente más rápido/denso
+            animationFrameId = requestAnimationFrame(draw);
+        }
+        draw();
+
+        // --- SISTEMA DE EXPORTACIÓN ---
+
+        // 1. Exportar Imagen (Recorte por Aspect Ratio)
+        function exportImage(ratioStr) {
+            const tempCanvas = document.createElement('canvas');
+            const tCtx = tempCanvas.getContext('2d');
             
-            // Iniciar el trazado desde la esquina inferior izquierda
-            ctx.moveTo(0, height);
+            // Definir proporciones
+            let rW, rH;
+            if (ratioStr === '16:9') { rW = 16; rH = 9; } 
+            else { rW = 3; rH = 4; }
+
+            // Calcular el recorte más grande posible centrado
+            let cropWidth = width;
+            let cropHeight = (width / rW) * rH;
+
+            if (cropHeight > height) {
+                cropHeight = height;
+                cropWidth = (height / rH) * rW;
+            }
+
+            tempCanvas.width = cropWidth;
+            tempCanvas.height = cropHeight;
+
+            // Dibujar el estado actual del canvas centrado
+            let sX = (width - cropWidth) / 2;
+            let sY = (height - cropHeight) / 2;
             
-            const segmentWidth = width / (temperatureData.length - 1);
-
-            for (let i = 0; i < temperatureData.length; i++) {
-                const x = i * segmentWidth;
-                
-                // Mapear la temperatura (-89 a -30) a la altura del canvas
-                // -89 será casi abajo (height), -30 será más arriba
-                // Normalizamos el valor entre 0 y 1
-                const normalizedTemp = (temperatureData[i] + 89) / (-30 + 89);
-                
-                // Invertimos para que las temperaturas más frías caigan y las cálidas suban
-                let baseY = height - (normalizedTemp * height * 0.8) - (height * 0.1); 
-                
-                // Añadimos la animación generativa (una oscilación basada en tiempo e índice)
-                // Esto le da el efecto de "viento gélido" respirando
-                let animatedY = baseY + Math.sin(time + i * 0.5) * 15;
-
-                // Si es el primer punto, conectamos directamente
-                if (i === 0) {
-                    ctx.lineTo(x, animatedY);
-                } else {
-                    // Usamos curvas cuadráticas para suavizar ligeramente, o líneas rectas para picos agresivos
-                    // Como pediste "gráfica de picos", lo dejo con líneas rectas y escarpadas para dar agresividad al frío
-                    ctx.lineTo(x, animatedY);
+            tCtx.drawImage(canvas, sX, sY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+            
+            // NOTA: Para incluir el patrón de semitono en la exportación (ya que es CSS), 
+            // lo dibujamos sobre el canvas temporal con una trama básica de puntos.
+            tCtx.fillStyle = 'rgba(2, 4, 18, 0.4)';
+            for(let x=0; x<cropWidth; x+=4) {
+                for(let y=0; y<cropHeight; y+=4) {
+                    if((x/4 + y/4) % 2 === 0) {
+                        tCtx.fillRect(x, y, 1.5, 1.5);
+                    }
                 }
             }
 
-            // Cerrar el polígono hacia la esquina inferior derecha
-            ctx.lineTo(width, height);
-            ctx.closePath();
-
-            // Rellenar con el gradiente
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            // Opcional: línea sutil en el borde superior de los picos
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-
-            // Avanzar el tiempo para el siguiente frame
-            time += 0.02;
-            requestAnimationFrame(draw);
+            // Descargar
+            const link = document.createElement('a');
+            link.download = `frost_generative_${ratioStr.replace(':','_')}.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
         }
 
-        window.addEventListener('resize', resize);
+        // 2. Exportar Video (WebM)
+        let mediaRecorder;
+        let recordedChunks = [];
         
-        // Iniciar
-        resize();
-        draw();
+        function exportVideo() {
+            const btn = document.getElementById('btnVideo');
+            if (btn.classList.contains('recording')) return; // Evitar clicks dobles
+            
+            btn.classList.add('recording');
+            btn.textContent = "🔴 Grabando (5s)...";
+            recordedChunks = [];
+
+            // Capturar el stream del canvas a 30fps
+            const stream = canvas.captureStream(30);
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = `frost_generative.webm`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+                
+                btn.classList.remove('recording');
+                btn.textContent = "🎥 Export Video (WebM)";
+            };
+
+            mediaRecorder.start();
+            // Grabar por 5 segundos
+            setTimeout(() => mediaRecorder.stop(), 5000);
+        }
+
+        // 3. Exportar GIF (Usando gif.js)
+        function exportGIF() {
+            if (typeof GIF === 'undefined') {
+                alert("La librería GIF.js está cargando, intenta en un segundo.");
+                return;
+            }
+            
+            const btn = document.getElementById('btnGif');
+            if (btn.classList.contains('recording')) return;
+            
+            btn.classList.add('recording');
+            btn.textContent = "⏳ Generando GIF...";
+
+            // Configuramos una versión de menor resolución para que el GIF no pese gigabytes
+            const gifCanvas = document.createElement('canvas');
+            gifCanvas.width = 400; 
+            gifCanvas.height = 300;
+            const gCtx = gifCanvas.getContext('2d');
+
+            const gif = new GIF({
+                workers: 2,
+                quality: 10,
+                width: 400,
+                height: 300,
+                workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
+            });
+
+            let framesCaptured = 0;
+            const maxFrames = 30; // 1 segundo a 30fps
+
+            function captureFrame() {
+                // Dibujar el estado actual a la versión mini del canvas
+                gCtx.drawImage(canvas, 0, 0, 400, 300);
+                gif.addFrame(gCtx, {copy: true, delay: 33}); // ~30fps
+                
+                framesCaptured++;
+                if(framesCaptured < maxFrames) {
+                    requestAnimationFrame(captureFrame);
+                } else {
+                    btn.textContent = "⚙️ Procesando...";
+                    gif.render();
+                }
+            }
+
+            gif.on('finished', function(blob) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = 'frost_generative.gif';
+                link.href = url;
+                link.click();
+                
+                btn.classList.remove('recording');
+                btn.textContent = "🎞️ Export GIF";
+            });
+
+            captureFrame();
+        }
     </script>
 </body>
 </html>
