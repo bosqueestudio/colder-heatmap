@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frost Gen v2.2 - Ultra Liquid Gradient</title>
+    <title>Frost Gen v2.3 - Crystalline Grid</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
         /* === UI/UX RESET & BASE === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: #020412;
+            background-color: #02040a;
             color: #FFFFFF;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
@@ -19,47 +19,47 @@
             align-items: center;
         }
 
-        /* === CONTENEDOR PRINCIPAL === */
         .visual-container {
             position: relative;
             width: 100vw;
             height: 100vh;
-            background-color: #020412;
+            background-color: #02040a;
         }
 
+        /* Canvas nítido, sin blur, para el efecto cristal */
         canvas {
             display: block;
             width: 100%;
             height: 100%;
+            image-rendering: crisp-edges;
         }
 
-        /* === INTERFAZ DE USUARIO (GLASSMORPHISM TOP) === */
+        /* === INTERFAZ DE USUARIO (Mantenida Verbatim) === */
         .header-title {
             position: absolute;
             top: 1.5rem;
             left: 1.5rem;
-            background: rgba(2, 4, 18, 0.25);
+            background: rgba(2, 4, 18, 0.4);
             backdrop-filter: blur(12px);
             padding: 0.8rem 1.2rem;
             border-radius: 8px;
-            border: 1px solid rgba(186, 213, 239, 0.1);
+            border: 1px solid rgba(186, 213, 239, 0.15);
             font-size: 0.9rem;
             font-weight: 500;
             letter-spacing: 0.5px;
             z-index: 10;
         }
 
-        /* === PANEL DE CONTROL DE DISEÑO (BOTTOM) === */
         .ui-panel {
             position: absolute;
             bottom: 2.5rem;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(6, 12, 49, 0.25);
+            background: rgba(6, 12, 49, 0.35);
             backdrop-filter: blur(20px);
             padding: 1.8rem;
             border-radius: 16px;
-            border: 1px solid rgba(186, 213, 239, 0.15);
+            border: 1px solid rgba(186, 213, 239, 0.2);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -67,10 +67,9 @@
             z-index: 10;
             width: 90%;
             max-width: 900px;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.5);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.6);
         }
 
-        /* Bloque Izquierdo: Temperatura */
         .panel-left {
             display: flex;
             align-items: center;
@@ -83,7 +82,7 @@
             font-weight: 300;
             min-width: 140px;
             letter-spacing: -1px;
-            text-shadow: 0 4px 12px rgba(186, 213, 239, 0.2);
+            text-shadow: 0 4px 12px rgba(186, 213, 239, 0.3);
         }
 
         .slider-wrapper {
@@ -96,7 +95,7 @@
         .slider-wrapper span {
             font-size: 0.8rem;
             color: #BAD5EF;
-            opacity: 0.6;
+            opacity: 0.8;
             font-weight: 600;
         }
 
@@ -104,7 +103,7 @@
             flex-grow: 1;
             -webkit-appearance: none;
             height: 4px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.3);
             border-radius: 2px;
             outline: none;
         }
@@ -115,7 +114,7 @@
             border-radius: 3px;
             background: #FFFFFF;
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(255,255,255,0.9);
             transition: transform 0.1s ease;
         }
 
@@ -123,7 +122,6 @@
             transform: scale(1.2);
         }
 
-        /* Bloque Derecho: Controles Grid */
         .panel-right {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -132,21 +130,22 @@
         }
 
         button {
-            background: rgba(255, 255, 255, 0.03);
-            color: rgba(218, 235, 255, 0.8);
-            border: 1px solid rgba(186, 213, 239, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(218, 235, 255, 0.9);
+            border: 1px solid rgba(186, 213, 239, 0.25);
             padding: 0.6rem 1rem;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.8rem;
             transition: all 0.25s ease;
             text-align: center;
+            font-weight: 500;
         }
 
         button:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
             color: #FFFFFF;
-            border-color: rgba(255, 255, 255, 0.6);
+            border-color: rgba(255, 255, 255, 0.8);
         }
 
         button.recording {
@@ -166,10 +165,8 @@
 <body>
 
     <div class="visual-container">
-        <div class="header-title">Vostok Station, Antarctica | Frost Gen v2.2</div>
-        
+        <div class="header-title">Vostok Station, Antarctica | Frost Gen v2.3</div>
         <canvas id="fluidCanvas"></canvas>
-        
         <div class="ui-panel">
             <div class="panel-left">
                 <div class="temp-display" id="tempDisplay">-45°C</div>
@@ -198,44 +195,54 @@
         let width, height;
         let time = 0;
 
-        // === PALETA CROMÁTICA EXPANDIDA (8 Escalas de Oscuro a Claro) ===
+        // Tamaño del bloque de cristal (ajusta esto para más o menos pixeles)
+        const blockSize = 18; 
+
+        // Paleta de altísimo contraste
         const palette = [
-            '#020412', // Base Abisal Extrema
-            '#060C31', // Tu color 1
-            '#0d174d', // Transición Oscura
-            '#16267E', // Tu color 2
-            '#4361ab', // Azul Glaciar Medio
-            '#7ba4cf', // Azul Escarcha Transición
-            '#BAD5EF', // Tu color 3
-            '#FFFFFF'  // Tu color 4 (Luz Máxima)
+            '#010208', // Negro abisal
+            '#060C31', // Azul oscuro
+            '#16267E', // Royal
+            '#3a6fd9', // Azul eléctrico
+            '#BAD5EF', // Hielo
+            '#ffffff'  // Blanco puro reluciente
         ];
 
-        // Canvas de ruido estático precargado para rendimiento
-        const noiseCanvas = document.createElement('canvas');
-        const noiseCtx = noiseCanvas.getContext('2d');
-        
-        function initNoise() {
-            noiseCanvas.width = 250;
-            noiseCanvas.height = 250;
-            const imgData = noiseCtx.createImageData(250, 250);
-            const data = imgData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                let val = Math.random() * 255;
-                data[i] = val;
-                data[i+1] = val;
-                data[i+2] = val;
-                data[i+3] = 255; // Opacidad total interna
+        // Canvas secundario para pre-renderizar el bisel de cristal (Optimización extrema)
+        const overlayCanvas = document.createElement('canvas');
+        const overCtx = overlayCanvas.getContext('2d');
+
+        function buildGlassOverlay() {
+            overlayCanvas.width = width;
+            overlayCanvas.height = height;
+            overCtx.clearRect(0, 0, width, height);
+
+            for (let x = 0; x < width; x += blockSize) {
+                for (let y = 0; y < height; y += blockSize) {
+                    // Reflejo de luz (Arriba y a la izquierda)
+                    overCtx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                    overCtx.fillRect(x, y, blockSize, 2); // Top
+                    overCtx.fillRect(x, y, 2, blockSize); // Left
+                    
+                    // Sombra (Abajo y a la derecha)
+                    overCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    overCtx.fillRect(x, y + blockSize - 2, blockSize, 2); // Bottom
+                    overCtx.fillRect(x + blockSize - 2, y, 2, blockSize); // Right
+
+                    // Toque extra de oscuridad en el centro para dar profundidad
+                    overCtx.fillStyle = 'rgba(0, 0, 20, 0.1)';
+                    overCtx.fillRect(x + 2, y + 2, blockSize - 4, blockSize - 4);
+                }
             }
-            noiseCtx.putImageData(imgData, 0, 0);
         }
-        initNoise();
 
         function resize() {
-            // Bajamos resolución interna a /2 para permitir un desenfoque (blur) masivo de 100px super fluido
-            width = window.innerWidth / 2;
-            height = window.innerHeight / 2;
+            // Trabajamos a resolución completa, pero renderizamos en bloques grandes
+            width = window.innerWidth;
+            height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
+            buildGlassOverlay();
         }
         window.addEventListener('resize', resize);
         resize();
@@ -244,97 +251,52 @@
             tempDisplay.textContent = `${e.target.value}°C`;
         });
 
-        // === MOTOR GENERATIVO LÍQUIDO CON ONDAS MARCADAS ===
+        // === MOTOR GENERATIVO DE BLOQUES DE CRISTAL ===
         function draw() {
             ctx.fillStyle = palette[0];
             ctx.fillRect(0, 0, width, height);
 
             let tempValue = Math.abs(parseInt(tempSlider.value)); 
-            let coldFactor = tempValue / 89; // 0 (Cálido/Blanco) a 1 (Frío Extremo/Azul)
+            let coldFactor = tempValue / 89; // 0 a 1
 
-            // Filtro de desenfoque masivo para fundir los colores como fotografía analógica
-            ctx.filter = 'blur(95px)';
-
-            // Dibujamos capas horizontales onduladas apiladas verticalmente
-            const layers = 6;
-            for (let i = 0; i < layers; i++) {
-                ctx.beginPath();
-                
-                // Posición base vertical de la capa
-                let baseY = (height / (layers - 1)) * i;
-                
-                ctx.moveTo(-50, height + 100); // Empezar abajo a la izquierda fuera de rango
-                ctx.lineTo(-50, baseY);
-
-                // Recorremos horizontalmente creando ondas MUY marcadas (Amplitud extendida)
-                for (let x = -50; x <= width + 50; x += 30) {
-                    // Frecuencias y velocidades combinadas para distorsión agresiva
-                    let wave1 = Math.sin((x * 0.006) + time + (i * 0.7)) * 110; 
-                    let wave2 = Math.cos((x * 0.012) - (time * 1.5)) * 50 * (1 - coldFactor * 0.4);
+            // Dibujamos la cuadrícula bloque por bloque
+            for (let x = 0; x < width; x += blockSize) {
+                for (let y = 0; y < height; y += blockSize) {
                     
-                    // Modificador reactivo al slider: el frío aplana o agita ciertas masas térmicas
-                    let y = baseY + wave1 + wave2 + (coldFactor * 60 * Math.sin(time + i));
-                    ctx.lineTo(x, y);
-                }
+                    // Ondas que definen el patrón general
+                    let wave1 = Math.sin((x * 0.003) + (time * 0.8)) * 100;
+                    let wave2 = Math.cos((y * 0.005) - (time * 1.2)) * 80;
+                    
+                    // Flujo distorsionado vertical
+                    let flow = Math.sin((x + wave2) * 0.008) + Math.cos((y + wave1) * 0.008 - time);
+                    
+                    // Normalizar flujo (aproximadamente de -2 a 2 -> mapear a 0 a 1)
+                    let intensity = (flow + 2) / 4;
+                    
+                    // Reaccionar al Slider (Enfriar empuja a los azules oscuros)
+                    intensity -= (coldFactor * 0.5);
+                    
+                    // Asegurar límites
+                    intensity = Math.max(0, Math.min(0.99, intensity));
 
-                ctx.lineTo(width + 50, height + 100);
-                ctx.closePath();
-
-                // Selección dinámica de color en base al slider y al orden de capas
-                let colorIndex = Math.min(palette.length - 1, Math.floor((i / layers) * 4 + (coldFactor * 3.5)));
-                ctx.fillStyle = palette[palette.length - 1 - colorIndex];
-                
-                // Variación de opacidad orgánica
-                ctx.globalAlpha = 0.7 + (Math.sin(time + i) * 0.1);
-                ctx.fill();
-            }
-
-            // Quitar filtro para aplicar el grano nítido encima
-            ctx.filter = 'none';
-            ctx.globalAlpha = 1.0;
-
-            // === APLICACIÓN DE RUIDO REACTIVO AL MOVIMIENTO ===
-            // Incrementamos la opacidad del grano si hace más frío o si hay más turbulencia simulada
-            let noiseOpacity = 0.04 + (coldFactor * 0.04) + (Math.sin(time * 2) * 0.01);
-            ctx.globalAlpha = noiseOpacity;
-            ctx.globalCompositeOperation = 'overlay';
-
-            // Hacemos que el ruido "baile" cambiando el offset aleatoriamente en cada frame
-            let noiseX = Math.floor(Math.random() * 100);
-            let noiseY = Math.floor(Math.random() * 100);
-
-            // Rellenamos la pantalla con el patrón de ruido
-            for (let x = 0; x < width; x += 250) {
-                for (let y = 0; y < height; y += 250) {
-                    ctx.drawImage(noiseCanvas, x - noiseX, y - noiseY);
+                    // Mapeo abrupto al color de la paleta (Quantized color)
+                    let colorIndex = Math.floor(intensity * palette.length);
+                    
+                    ctx.fillStyle = palette[colorIndex];
+                    ctx.fillRect(x, y, blockSize, blockSize);
                 }
             }
 
-            // Resetear modos normales del canvas
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.globalAlpha = 1.0;
+            // Aplicamos la textura pre-renderizada de cristal sobre todo el canvas
+            ctx.drawImage(overlayCanvas, 0, 0);
 
-            // Velocidad de animación reactiva (más frío = partículas y ondas se aceleran)
-            time += 0.012 + (coldFactor * 0.015); 
+            // Velocidad reactiva
+            time += 0.015 + (coldFactor * 0.01); 
             requestAnimationFrame(draw);
         }
         draw();
 
-        // === SISTEMA DE EXPORTACIÓN REPOSITORIO GITHUB ===
-
-        // Inyecta el ruido nítido directamente en los renders de descarga
-        function applyNoiseToExport(exportCtx, w, h, factor) {
-            exportCtx.save();
-            exportCtx.globalAlpha = 0.05 + (factor * 0.04);
-            exportCtx.globalCompositeOperation = 'overlay';
-            for (let x = 0; x < w; x += 250) {
-                for (let y = 0; y < h; y += 250) {
-                    exportCtx.drawImage(noiseCanvas, x, y);
-                }
-            }
-            exportCtx.restore();
-        }
-
+        // === SISTEMA DE EXPORTACIÓN ADAPTADO ===
         function exportImage(ratioStr) {
             const tempCanvas = document.createElement('canvas');
             const tCtx = tempCanvas.getContext('2d');
@@ -358,14 +320,11 @@
             let sX = (realW - cropWidth) / 2;
             let sY = (realH - cropHeight) / 2;
             
-            // Renderizar frame actual a tamaño completo
+            // Ya no hace falta añadir ruido, la textura de cristal ya está en el render
             tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH);
-            
-            let factor = Math.abs(parseInt(tempSlider.value)) / 89;
-            applyNoiseToExport(tCtx, cropWidth, cropHeight, factor);
 
             const link = document.createElement('a');
-            link.download = `frost_liquid_${ratioStr.replace(':','x')}.png`;
+            link.download = `frost_crystal_${ratioStr.replace(':','x')}.png`;
             link.href = tempCanvas.toDataURL('image/png', 1.0);
             link.click();
         }
@@ -392,7 +351,7 @@
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = `frost_liquid_loop.webm`;
+                link.download = `frost_crystal_loop.webm`;
                 link.href = url;
                 link.click();
                 URL.revokeObjectURL(url);
@@ -407,7 +366,7 @@
 
         function exportGIF() {
             if (typeof GIF === 'undefined') {
-                alert("GIF.js se está inicializando en segundo plano. Intenta de nuevo.");
+                alert("GIF.js inicializando, intenta en un segundo.");
                 return;
             }
             
@@ -418,25 +377,24 @@
             btn.textContent = "⏳ Procesando...";
 
             const gifCanvas = document.createElement('canvas');
-            gifCanvas.width = 450; 
+            // Mantenemos tamaño controlado para GIFs rápidos
+            gifCanvas.width = 480; 
             gifCanvas.height = 320;
             const gCtx = gifCanvas.getContext('2d');
 
             const gif = new GIF({
                 workers: 2,
-                quality: 8,
-                width: 450,
+                quality: 6, // Calidad un poco más baja para compensar el detalle de la grid
+                width: 480,
                 height: 320,
                 workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
             });
 
             let framesCaptured = 0;
             const maxFrames = 40; 
-            let factor = Math.abs(parseInt(tempSlider.value)) / 89;
 
             function captureFrame() {
-                gCtx.drawImage(canvas, 0, 0, 450, 320);
-                applyNoiseToExport(gCtx, 450, 320, factor);
+                gCtx.drawImage(canvas, 0, 0, width, height, 0, 0, 480, 320);
                 gif.addFrame(gCtx, {copy: true, delay: 35});
                 
                 framesCaptured++;
@@ -451,7 +409,7 @@
             gif.on('finished', function(blob) {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = 'frost_liquid.gif';
+                link.download = 'frost_crystal.gif';
                 link.href = url;
                 link.click();
                 
