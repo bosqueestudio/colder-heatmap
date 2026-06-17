@@ -1,16 +1,17 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generative Frost - Halftone Fluid</title>
+    <title>Frost Gen v2.1 - Vertical Halftone</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
+        /* === UI/UX RESET & BASE === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background-color: #020412;
             color: #FFFFFF;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
             height: 100vh;
             display: flex;
@@ -18,40 +19,57 @@
             align-items: center;
         }
 
-        /* Contenedor Principal */
+        /* === CONTENEDORES === */
         .visual-container {
             position: relative;
             width: 100vw;
             height: 100vh;
         }
 
-        /* Canvas Base */
+        /* Canvas estirado para maximizar el efecto blur natural */
         canvas {
             display: block;
             width: 100%;
             height: 100%;
+            object-fit: cover;
         }
 
-        /* Efecto Halftone (Semitono) superpuesto con CSS puro para rendimiento */
-        .halftone-overlay {
+        /* === TEXTURAS (Halftone + Grano Analógico) === */
+        .texture-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-image: radial-gradient(circle, #020412 1px, transparent 1px);
+            /* Patrón de puntos Semitono */
+            background-image: radial-gradient(rgba(2, 4, 18, 0.4) 1px, transparent 1px);
             background-size: 4px 4px;
             mix-blend-mode: overlay;
-            opacity: 0.6;
-            pointer-events: none; /* Para que no bloquee los clicks */
+            pointer-events: none;
+            z-index: 5;
         }
 
-        /* Interfaz de Usuario (Glassmorphism) */
+        /* === INTERFAZ DE USUARIO === */
+        .header-title {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            background: rgba(6, 12, 49, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            border: 1px solid rgba(186, 213, 239, 0.15);
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            z-index: 10;
+        }
+
         .ui-panel {
             position: absolute;
             bottom: 2rem;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(6, 12, 49, 0.6);
-            backdrop-filter: blur(12px);
-            padding: 1.5rem 2rem;
+            background: rgba(6, 12, 49, 0.4);
+            backdrop-filter: blur(16px);
+            padding: 1.5rem;
             border-radius: 16px;
             border: 1px solid rgba(186, 213, 239, 0.2);
             display: flex;
@@ -59,87 +77,119 @@
             gap: 1.5rem;
             z-index: 10;
             width: 90%;
-            max-width: 600px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 650px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
 
-        /* Slider de Temperatura */
-        .slider-container {
+        /* Layout interno del panel */
+        .panel-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .temp-display {
+            font-size: 2.5rem;
+            font-weight: 300;
+            min-width: 120px;
+            text-shadow: 0 2px 10px rgba(186, 213, 239, 0.3);
+        }
+
+        .slider-wrapper {
+            flex-grow: 1;
             display: flex;
             align-items: center;
             gap: 1rem;
+            position: relative;
         }
-        .slider-label { font-weight: bold; width: 60px; text-align: right; }
+
+        .slider-wrapper span {
+            font-size: 0.85rem;
+            color: #BAD5EF;
+            opacity: 0.8;
+        }
+
         input[type=range] {
             flex-grow: 1;
             -webkit-appearance: none;
             height: 6px;
-            background: linear-gradient(to right, #060C31, #BAD5EF);
+            background: linear-gradient(to right, #060C31, #BAD5EF, #FFFFFF);
             border-radius: 3px;
             outline: none;
         }
+        
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px; height: 20px;
-            border-radius: 50%;
+            width: 20px; height: 30px; /* Thumb más rectangular y elegante */
+            border-radius: 4px;
             background: #FFFFFF;
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+            box-shadow: 0 0 15px rgba(255,255,255,0.6);
         }
 
-        /* Botones de Exportación */
         .export-controls {
-            display: flex;
-            justify-content: space-between;
-            gap: 0.5rem;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.8rem;
         }
+
         button {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             color: #BAD5EF;
-            border: 1px solid #BAD5EF;
-            padding: 0.5rem 1rem;
+            border: 1px solid rgba(186, 213, 239, 0.3);
+            padding: 0.7rem;
             border-radius: 8px;
             cursor: pointer;
             font-size: 0.85rem;
             transition: all 0.3s ease;
-            flex-grow: 1;
             text-align: center;
         }
+
         button:hover {
-            background: #BAD5EF;
-            color: #060C31;
-            font-weight: bold;
+            background: rgba(186, 213, 239, 0.2);
+            color: #FFFFFF;
+            border-color: #FFFFFF;
         }
+
         button.recording {
             background: #e74c3c;
             color: white;
             border-color: #e74c3c;
             animation: pulse 1s infinite;
         }
+
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            50% { transform: scale(1.02); }
             100% { transform: scale(1); }
         }
+
     </style>
 </head>
 <body>
 
     <div class="visual-container">
+        <div class="header-title">Vostok Station, Antarctica | Frost Gen v2.1</div>
+        
         <canvas id="fluidCanvas"></canvas>
-        <div class="halftone-overlay"></div>
+        <div class="texture-overlay"></div>
         
         <div class="ui-panel">
-            <div class="slider-container">
-                <span class="slider-label" id="tempDisplay">0°C</span>
-                <input type="range" id="tempSlider" min="-89" max="0" value="0">
+            <div class="panel-top">
+                <div class="temp-display" id="tempDisplay">-45°C</div>
+                <div class="slider-wrapper">
+                    <span>-89</span>
+                    <input type="range" id="tempSlider" min="-89" max="0" value="-45">
+                    <span>0</span>
+                </div>
             </div>
+            
             <div class="export-controls">
-                <button onclick="exportImage('16:9')">📸 Img 16:9</button>
-                <button onclick="exportImage('3:4')">📸 Img 3:4</button>
+                <button onclick="exportImage('16:9')">📷 Img 16:9</button>
+                <button onclick="exportImage('3:4')">📷 Img 3:4</button>
                 <button onclick="exportGIF()" id="btnGif">🎞️ Export GIF</button>
-                <button onclick="exportVideo()" id="btnVideo">🎥 Export Video (WebM)</button>
+                <button onclick="exportVideo()" id="btnVideo">🎥 Export WebM</button>
             </div>
         </div>
     </div>
@@ -152,127 +202,154 @@
         
         let width, height;
         let time = 0;
-        let animationFrameId;
 
         // Paleta base
-        const colors = ['#060C31', '#16267E', '#BAD5EF', '#FFFFFF'];
+        const colors = {
+            abyss: '#060C31',
+            royal: '#16267E',
+            ice: '#BAD5EF',
+            white: '#FFFFFF'
+        };
 
         function resize() {
-            width = window.innerWidth;
-            height = window.innerHeight;
+            // Reducimos la resolución interna a la mitad para mejorar el rendimiento del blur
+            // El CSS se encargará de estirarlo, dando un blur natural extra.
+            width = window.innerWidth / 1.5;
+            height = window.innerHeight / 1.5;
             canvas.width = width;
             canvas.height = height;
         }
         window.addEventListener('resize', resize);
         resize();
 
-        // Actualizar UI del slider
+        // Actualizar UI
         tempSlider.addEventListener('input', (e) => {
             tempDisplay.textContent = `${e.target.value}°C`;
         });
 
-        // Loop Visual Generativo (Fluidos Verticales)
+        // --- SISTEMA GENERATIVO VERTICAL ---
         function draw() {
-            ctx.fillStyle = '#020412';
+            ctx.fillStyle = colors.abyss;
             ctx.fillRect(0, 0, width, height);
 
-            let tempValue = Math.abs(parseInt(tempSlider.value)); // De 0 a 89
-            let coldFactor = tempValue / 89; // 0 (Cálido/Blanco) a 1 (Frío/Azul oscuro)
+            let tempValue = Math.abs(parseInt(tempSlider.value)); 
+            let coldFactor = tempValue / 89; // 0 (Blanco/Ice) a 1 (Abyss/Royal)
 
-            // Dibujar varias capas de ondas fluidas (simulando la referencia)
-            for (let i = 0; i < 4; i++) {
+            // Aplicamos un desenfoque extremo para lograr el efecto "líquido/gradiente fotográfico"
+            ctx.filter = 'blur(50px)';
+
+            // Dibujamos bandas verticales que ondulan de izquierda a derecha
+            const bands = 5;
+            for (let i = 0; i <= bands; i++) {
                 ctx.beginPath();
-                ctx.moveTo(0, height);
-
-                let waveHeight = height * 0.4 + (i * 100);
                 
-                for (let x = 0; x <= width; x += 20) {
-                    // Matemáticas para ondas reactivas al tiempo y al slider
-                    let noise = Math.sin((x * 0.005) + time + (i * 0.5)) * Math.cos((x * 0.01) - time);
-                    let y = height - waveHeight + (noise * 150) + (coldFactor * 200 * (i%2===0?-1:1));
-                    ctx.lineTo(x, y);
+                // Empezamos arriba
+                let startX = (width / bands) * i;
+                ctx.moveTo(startX, -50);
+
+                // Bajamos por el eje Y
+                for (let y = 0; y <= height + 50; y += 40) {
+                    // Matemáticas para el viento vertical
+                    let wave1 = Math.sin((y * 0.003) - (time * 0.8) + i) * 150;
+                    let wave2 = Math.cos((y * 0.005) + (time * 1.2) - i) * 80 * coldFactor;
+                    
+                    ctx.lineTo(startX + wave1 + wave2, y);
                 }
                 
-                ctx.lineTo(width, height);
-                ctx.lineTo(0, height);
+                // Cerramos la forma hacia la izquierda para rellenar
+                ctx.lineTo(0, height + 50);
+                ctx.lineTo(0, -50);
                 ctx.closePath();
 
-                // Interpolar colores según la temperatura
-                // Si hace más frío (coldFactor alto), usamos los colores oscuros de la paleta
-                let colorIndex = Math.floor(coldFactor * 3); 
-                let baseColor = colors[Math.min(i + colorIndex, 3)];
+                // Lógica de color según el slider
+                let gradientColors = [colors.white, colors.ice, colors.royal, colors.abyss];
+                // Mientras más frío, el índice de color se mueve hacia los oscuros
+                let colorIndex = Math.min(3, Math.floor((i / bands) * 2 + (coldFactor * 2)));
                 
-                ctx.fillStyle = baseColor;
-                ctx.globalAlpha = 0.8;
+                ctx.fillStyle = gradientColors[colorIndex];
+                ctx.globalAlpha = 0.6 + (Math.sin(time + i) * 0.2); // Parpadeo suave
                 ctx.fill();
             }
 
-            time += 0.01 + (coldFactor * 0.02); // Más frío = movimiento ligeramente más rápido/denso
-            animationFrameId = requestAnimationFrame(draw);
+            // Añadir un destello central blanco/celeste si hace menos frío
+            if (coldFactor < 0.6) {
+                ctx.beginPath();
+                ctx.arc(width/2 + Math.sin(time)*50, height/2, width/3, 0, Math.PI * 2);
+                ctx.fillStyle = colors.ice;
+                ctx.globalAlpha = 0.3 * (1 - coldFactor);
+                ctx.fill();
+            }
+
+            ctx.filter = 'none'; // Resetear filtro por seguridad
+
+            // Velocidad base + incremento si hace más frío
+            time += 0.015 + (coldFactor * 0.01); 
+            requestAnimationFrame(draw);
         }
         draw();
 
         // --- SISTEMA DE EXPORTACIÓN ---
 
-        // 1. Exportar Imagen (Recorte por Aspect Ratio)
+        // Función auxiliar para dibujar el semitono en el canvas exportado
+        function applyHalftoneToCanvas(exportCtx, w, h) {
+            exportCtx.fillStyle = 'rgba(2, 4, 18, 0.3)';
+            for(let x = 0; x < w; x += 4) {
+                for(let y = 0; y < h; y += 4) {
+                    if((x/4 + y/4) % 2 === 0) {
+                        exportCtx.fillRect(x, y, 2, 2);
+                    }
+                }
+            }
+        }
+
         function exportImage(ratioStr) {
             const tempCanvas = document.createElement('canvas');
             const tCtx = tempCanvas.getContext('2d');
             
-            // Definir proporciones
-            let rW, rH;
-            if (ratioStr === '16:9') { rW = 16; rH = 9; } 
-            else { rW = 3; rH = 4; }
+            // Trabajamos sobre la resolución real de la pantalla para el export
+            let realW = window.innerWidth;
+            let realH = window.innerHeight;
 
-            // Calcular el recorte más grande posible centrado
-            let cropWidth = width;
-            let cropHeight = (width / rW) * rH;
+            let rW = ratioStr === '16:9' ? 16 : 3;
+            let rH = ratioStr === '16:9' ? 9 : 4;
 
-            if (cropHeight > height) {
-                cropHeight = height;
-                cropWidth = (height / rH) * rW;
+            let cropWidth = realW;
+            let cropHeight = (realW / rW) * rH;
+
+            if (cropHeight > realH) {
+                cropHeight = realH;
+                cropWidth = (realH / rH) * rW;
             }
 
             tempCanvas.width = cropWidth;
             tempCanvas.height = cropHeight;
 
-            // Dibujar el estado actual del canvas centrado
-            let sX = (width - cropWidth) / 2;
-            let sY = (height - cropHeight) / 2;
+            let sX = (realW - cropWidth) / 2;
+            let sY = (realH - cropHeight) / 2;
             
-            tCtx.drawImage(canvas, sX, sY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+            // Dibujar el estado actual (estirándolo desde nuestra resolución interna optimizada)
+            tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH);
             
-            // NOTA: Para incluir el patrón de semitono en la exportación (ya que es CSS), 
-            // lo dibujamos sobre el canvas temporal con una trama básica de puntos.
-            tCtx.fillStyle = 'rgba(2, 4, 18, 0.4)';
-            for(let x=0; x<cropWidth; x+=4) {
-                for(let y=0; y<cropHeight; y+=4) {
-                    if((x/4 + y/4) % 2 === 0) {
-                        tCtx.fillRect(x, y, 1.5, 1.5);
-                    }
-                }
-            }
+            // Aplicar el efecto analógico directo a la imagen
+            applyHalftoneToCanvas(tCtx, cropWidth, cropHeight);
 
-            // Descargar
             const link = document.createElement('a');
-            link.download = `frost_generative_${ratioStr.replace(':','_')}.png`;
-            link.href = tempCanvas.toDataURL('image/png');
+            link.download = `frost_gen_${ratioStr.replace(':','x')}.png`;
+            link.href = tempCanvas.toDataURL('image/png', 1.0);
             link.click();
         }
 
-        // 2. Exportar Video (WebM)
         let mediaRecorder;
         let recordedChunks = [];
         
         function exportVideo() {
             const btn = document.getElementById('btnVideo');
-            if (btn.classList.contains('recording')) return; // Evitar clicks dobles
+            if (btn.classList.contains('recording')) return; 
             
             btn.classList.add('recording');
             btn.textContent = "🔴 Grabando (5s)...";
             recordedChunks = [];
 
-            // Capturar el stream del canvas a 30fps
             const stream = canvas.captureStream(30);
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
 
@@ -284,24 +361,22 @@
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = `frost_generative.webm`;
+                link.download = `frost_gen_loop.webm`;
                 link.href = url;
                 link.click();
                 URL.revokeObjectURL(url);
                 
                 btn.classList.remove('recording');
-                btn.textContent = "🎥 Export Video (WebM)";
+                btn.textContent = "🎥 Export WebM";
             };
 
             mediaRecorder.start();
-            // Grabar por 5 segundos
             setTimeout(() => mediaRecorder.stop(), 5000);
         }
 
-        // 3. Exportar GIF (Usando gif.js)
         function exportGIF() {
             if (typeof GIF === 'undefined') {
-                alert("La librería GIF.js está cargando, intenta en un segundo.");
+                alert("GIF.js cargando, espera un segundo.");
                 return;
             }
             
@@ -309,10 +384,10 @@
             if (btn.classList.contains('recording')) return;
             
             btn.classList.add('recording');
-            btn.textContent = "⏳ Generando GIF...";
+            btn.textContent = "⏳ Generando...";
 
-            // Configuramos una versión de menor resolución para que el GIF no pese gigabytes
             const gifCanvas = document.createElement('canvas');
+            // Mantenemos el GIF pequeño (400x300) para evitar archivos gigantes
             gifCanvas.width = 400; 
             gifCanvas.height = 300;
             const gCtx = gifCanvas.getContext('2d');
@@ -326,12 +401,14 @@
             });
 
             let framesCaptured = 0;
-            const maxFrames = 30; // 1 segundo a 30fps
+            const maxFrames = 45; // 1.5 segundos a 30fps
 
             function captureFrame() {
-                // Dibujar el estado actual a la versión mini del canvas
                 gCtx.drawImage(canvas, 0, 0, 400, 300);
-                gif.addFrame(gCtx, {copy: true, delay: 33}); // ~30fps
+                // Aplicamos semitono sutil al GIF
+                applyHalftoneToCanvas(gCtx, 400, 300);
+
+                gif.addFrame(gCtx, {copy: true, delay: 33});
                 
                 framesCaptured++;
                 if(framesCaptured < maxFrames) {
@@ -345,7 +422,7 @@
             gif.on('finished', function(blob) {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = 'frost_generative.gif';
+                link.download = 'frost_gen.gif';
                 link.href = url;
                 link.click();
                 
