@@ -3,239 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOSTOK [SYS.CORE] - Frost Gen v5.0</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <title>Vostok Station | Frost Gen v3.0.2 - Deep Abyss</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
-        /* === RESET & HUD BASE === */
+        /* === UI/UX RESET & BASE === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: #000;
-            color: #BAD5EF; /* Azul hielo como color de texto base */
-            font-family: 'Space Mono', monospace;
+            background-color: #010208; /* Fondo abisal más profundo */
+            color: #FFFFFF;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
             height: 100vh;
-            width: 100vw;
-            text-transform: uppercase;
-            font-size: 12px;
-        }
-
-        #fluidCanvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
-        }
-
-        /* === GRID/SCANLINES OVERLAY OPCIONAL === */
-        .scanlines {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
-            background-size: 100% 4px;
-            z-index: 5;
-            pointer-events: none;
-        }
-
-        /* === CAPA DE UI === */
-        .ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10;
-            pointer-events: none; 
             display: flex;
-            justify-content: space-between;
-            padding: 2rem;
+            justify-content: center;
+            align-items: center;
         }
 
-        .panel { pointer-events: auto; }
+        .visual-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-color: #010208;
+        }
 
-        /* === HUD CARDS (BRUTALIST) === */
-        .hud-box {
-            background: rgba(2, 4, 12, 0.85); 
-            border: 1px solid rgba(186, 213, 239, 0.3);
-            border-left: 4px solid #BAD5EF; /* Acento HUD */
-            padding: 1.5rem;
-            width: 320px;
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* === INTERFAZ DE USUARIO (GLASSMORPHISM) === */
+        .header-title {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            background: rgba(2, 4, 18, 0.4);
+            backdrop-filter: blur(12px);
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            border: 1px solid rgba(186, 213, 239, 0.15);
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            z-index: 10;
+        }
+
+        .ui-panel {
+            position: absolute;
+            bottom: 2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(6, 12, 49, 0.35);
+            backdrop-filter: blur(20px);
+            padding: 1.8rem;
+            border-radius: 16px;
+            border: 1px solid rgba(186, 213, 239, 0.15);
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
-            box-shadow: 0 0 20px rgba(6, 12, 49, 0.8);
+            z-index: 10;
+            width: 90%;
+            max-width: 900px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
         }
 
-        .sys-header {
+        .ui-row-1 {
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid rgba(186, 213, 239, 0.2);
-            padding-bottom: 0.5rem;
-            margin-bottom: 0.5rem;
+            gap: 2.5rem;
         }
 
-        .sys-title { font-weight: 700; color: #FFFFFF; letter-spacing: 2px; }
-        .sys-status { color: #50e3c2; animation: blink 2s infinite; }
-
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        /* === DATA READOUT (TEMPERATURE) === */
-        .readout-container {
+        .panel-left {
             display: flex;
             align-items: center;
             gap: 1.5rem;
+            flex-grow: 1;
         }
 
-        .gauge-ring {
-            position: relative;
-            width: 80px; height: 80px;
-            border-radius: 50%;
-            border: 1px solid rgba(186, 213, 239, 0.2);
-            display: flex; justify-content: center; align-items: center;
+        .temp-display {
+            font-size: 3rem;
+            font-weight: 300;
+            min-width: 140px;
+            letter-spacing: -1px;
+            text-shadow: 0 4px 12px rgba(186, 213, 239, 0.3);
         }
 
-        .gauge-fill {
-            position: absolute;
-            top: 4px; left: 4px; right: 4px; bottom: 4px;
-            border-radius: 50%;
-            background: conic-gradient(#BAD5EF 0%, #BAD5EF var(--fill-pct, 50%), transparent var(--fill-pct, 50%), transparent 100%);
-            mask: radial-gradient(transparent 60%, black 62%);
-            -webkit-mask: radial-gradient(transparent 60%, black 62%);
+        .slider-wrapper {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
-        .temp-val { font-size: 1.5rem; font-weight: 700; color: #FFF; z-index: 2; }
-        
-        .data-labels div { margin-bottom: 4px; }
-        .lbl-main { color: #FFF; font-weight: 700; }
-        .lbl-sub { color: rgba(186, 213, 239, 0.6); font-size: 10px; }
-
-        /* === SLIDERS (TECH STYLE) === */
-        .control-group { display: flex; flex-direction: column; gap: 0.8rem; }
-        
-        .ctrl-header {
-            display: flex; justify-content: space-between;
-            font-size: 10px; color: #BAD5EF;
+        .slider-wrapper span {
+            font-size: 0.8rem;
+            color: #BAD5EF;
+            opacity: 0.6;
+            font-weight: 600;
         }
 
         input[type=range] {
+            flex-grow: 1;
             -webkit-appearance: none;
-            width: 100%; height: 2px;
-            background: rgba(186, 213, 239, 0.3);
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
             outline: none;
         }
         
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 10px; height: 18px;
-            background: #BAD5EF;
+            width: 12px; height: 24px;
+            border-radius: 3px;
+            background: #FFFFFF;
             cursor: pointer;
-            border-radius: 0; /* Rectangular tech thumb */
+            box-shadow: 0 0 15px rgba(255,255,255,0.9);
+            transition: transform 0.1s ease;
         }
-        
-        input[type=range]::-webkit-slider-thumb:hover { background: #FFFFFF; }
 
-        /* === TOOLBAR DERECHA === */
-        .right-panel { display: flex; flex-direction: column; align-items: flex-end; gap: 1rem; }
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
 
-        .btn-tech {
-            background: rgba(2, 4, 12, 0.8);
-            color: #BAD5EF;
-            border: 1px solid rgba(186, 213, 239, 0.3);
-            padding: 0.8rem;
+        .panel-right {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.6rem;
+            min-width: 260px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(218, 235, 255, 0.8);
+            border: 1px solid rgba(186, 213, 239, 0.2);
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
             cursor: pointer;
-            font-family: 'Space Mono', monospace;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-            width: 120px;
-            text-align: left;
+            font-size: 0.8rem;
+            transition: all 0.25s ease;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #FFFFFF;
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        button.recording {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        .ui-row-2 {
+            background: rgba(6, 12, 49, 0.4);
+            backdrop-filter: blur(12px);
+            padding: 1.2rem;
+            border-radius: 8px;
+            border: 1px solid rgba(186, 213, 239, 0.15);
             display: flex;
-            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
         }
 
-        .btn-tech:hover {
-            background: rgba(186, 213, 239, 0.2);
-            color: #FFF;
-            border-color: #FFF;
+        .size-label {
+            font-size: 0.9rem;
+            color: #BAD5EF;
+            min-width: 120px;
         }
 
-        .btn-tech.recording {
-            background: #4a0000;
-            color: #ff4444;
-            border-color: #ff4444;
-            animation: blink 1s infinite;
+        #sizeSliderWrapper {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
-        .coord-overlay {
-            position: absolute;
-            bottom: 2rem; left: 2rem;
-            color: rgba(186, 213, 239, 0.4);
-            font-size: 10px;
-            pointer-events: none;
+        #sizeSliderWrapper span {
+            font-size: 0.8rem;
+            color: #BAD5EF;
+            opacity: 0.6;
         }
 
     </style>
 </head>
 <body>
 
-    <canvas id="fluidCanvas"></canvas>
-    <div class="scanlines"></div>
-    
-    <div class="ui-layer">
+    <div class="visual-container">
+        <div class="header-title">Vostok Station, Antarctica | Frost Gen v3.0.2</div>
         
-        <div class="panel left-panel">
-            <div class="hud-box">
-                <div class="sys-header">
-                    <span class="sys-title">VOSTOK_STATION</span>
-                    <span class="sys-status">[ONLINE]</span>
+        <canvas id="fluidCanvas"></canvas>
+        
+        <div class="ui-panel">
+            <div class="ui-row-1">
+                <div class="panel-left">
+                    <div class="temp-display" id="tempDisplay">-45°C</div>
+                    <div class="slider-wrapper">
+                        <span>-89</span>
+                        <input type="range" id="tempSlider" min="-89" max="0" value="-45">
+                        <span>0</span>
+                    </div>
                 </div>
                 
-                <div class="readout-container">
-                    <div class="gauge-ring" id="ringContainer" style="--fill-pct: 50%;">
-                        <div class="gauge-fill"></div>
-                        <div class="temp-val" id="tempDisplay">-45°</div>
-                    </div>
-                    <div class="data-labels">
-                        <div class="lbl-main">CORE_THERMAL</div>
-                        <div class="lbl-sub">LAT: -78.4645</div>
-                        <div class="lbl-sub">LON: 106.8340</div>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <div class="ctrl-header">
-                        <span>CALIBRATE_TEMP</span>
-                        <span id="tempValSub">-45.00 C</span>
-                    </div>
-                    <input type="range" id="tempSlider" min="-89" max="0" value="-45">
-                </div>
-
-                <div class="control-group" style="margin-top: 10px;">
-                    <div class="ctrl-header">
-                        <span>PLASMA_DENSITY</span>
-                        <span id="sizeValueDisplay">18 PX</span>
-                    </div>
-                    <input type="range" id="sizeSlider" min="8" max="35" value="18">
+                <div class="panel-right">
+                    <button onclick="exportImage('16:9')">📸 Img 16:9</button>
+                    <button onclick="exportImage('3:4')">📸 Img 3:4</button>
+                    <button onclick="exportGIF()" id="btnGif">🎞️ Export GIF</button>
+                    <button onclick="exportVideo()" id="btnVideo">🎥 Export WebM</button>
                 </div>
             </div>
-        </div>
 
-        <div class="panel right-panel">
-            <button class="btn-tech" onclick="exportImage('16:9')">
-                <span>IMG_16:9</span> <span>[+]</span>
-            </button>
-            <button class="btn-tech" onclick="exportImage('3:4')">
-                <span>IMG_3:4</span> <span>[+]</span>
-            </button>
-            <button class="btn-tech" onclick="exportGIF()" id="btnGif" style="margin-top: 1rem;">
-                <span>EXP_GIF</span> <span>[>]</span>
-            </button>
-            <button class="btn-tech" onclick="exportVideo()" id="btnVideo">
-                <span>REC_WEBM</span> <span>[O]</span>
-            </button>
-        </div>
-
-        <div class="coord-overlay">
-            RENDER_ENGINE: FROST_GEN_V5<br>
-            OUTPUT: FLUID_CELLULAR_AUTOMATA
+            <div class="ui-row-2">
+                <div class="size-label">Halftone Size:</div>
+                <div id="sizeSliderWrapper">
+                    <span>Nítido</span>
+                    <input type="range" id="sizeSlider" min="10" max="40" value="22">
+                    <span>Granular</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -244,125 +239,109 @@
         const ctx = canvas.getContext('2d');
         const tempSlider = document.getElementById('tempSlider');
         const tempDisplay = document.getElementById('tempDisplay');
-        const tempValSub = document.getElementById('tempValSub');
-        const ringContainer = document.getElementById('ringContainer');
         const sizeSlider = document.getElementById('sizeSlider');
-        const sizeValueDisplay = document.getElementById('sizeValueDisplay');
         
         let width, height;
         let time = 0;
-        let gridSpacing = 18; 
 
-        // Paleta base recuperada 
-        const hexPalette = ['#010208', '#060C31', '#132378', '#2244C4', '#BAD5EF', '#ffffff'];
-        
-        const rgbPalette = hexPalette.map(hex => {
-            let v = parseInt(hex.replace('#', ''), 16);
-            return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
-        });
+        let gridSpacing = 22; 
 
-        // Interpolación lineal de color suave
-        function getInterpolatedColor(intensity, alpha = 1) {
-            let t = Math.max(0, Math.min(0.999, intensity));
-            let scaledT = t * (rgbPalette.length - 1);
-            let index = Math.floor(scaledT);
-            let frac = scaledT - index;
-            
-            let c1 = rgbPalette[index];
-            let c2 = rgbPalette[index + 1];
-            
-            let r = Math.round(c1.r + (c2.r - c1.r) * frac);
-            let g = Math.round(c1.g + (c2.g - c1.g) * frac);
-            let b = Math.round(c1.b + (c2.b - c1.b) * frac);
-            
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        }
+        // Paleta base extendida con varianza profunda
+        const palette = [
+            '#010208', // 0: Abyssal Deepest
+            '#060C31', // 1: Abyss Dark
+            '#0d174d', // 2: Royal Transition Dark
+            '#16267E', // 3: Royal Mid
+            '#2244C4', // 4: Royal Electric
+            '#7ba4cf', // 5: Ice Dark
+            '#BAD5EF', // 6: Ice Light
+            '#ffffff'  // 7: Pure White
+        ];
 
-        // Ruido Fotográfico
-        const noiseCanvas = document.createElement('canvas');
-        const noiseCtx = noiseCanvas.getContext('2d');
-        function generateNoise() {
-            noiseCanvas.width = width;
-            noiseCanvas.height = height;
-            const imgData = noiseCtx.createImageData(width, height);
-            const buffer = new Uint32Array(imgData.data.buffer);
-            for (let i = 0; i < buffer.length; i++) {
-                let shade = Math.random() * 255;
-                buffer[i] = (12 << 24) | (shade << 16) | (shade << 8) | shade; // 12/255 opacidad
-            }
-            noiseCtx.putImageData(imgData, 0, 0);
-        }
+        const glowThreshold = 5; // A partir del índice 5, los colores brillan
+        const glowColor = '#50e3c233'; // Brillo incandescente cian suave
 
         function resize() {
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
-            generateNoise();
         }
         window.addEventListener('resize', resize);
         resize();
 
-        function updateUI() {
-            let temp = parseInt(tempSlider.value);
-            tempDisplay.textContent = `${temp}°`;
-            tempValSub.textContent = `${temp}.00 C`;
-            let pct = ((temp + 89) / 89) * 100;
-            ringContainer.style.setProperty('--fill-pct', `${pct}%`);
-        }
+        tempSlider.addEventListener('input', (e) => {
+            tempDisplay.textContent = `${e.target.value}°C`;
+        });
 
-        tempSlider.addEventListener('input', updateUI);
-        
         sizeSlider.addEventListener('input', (e) => {
             gridSpacing = parseInt(e.target.value);
-            sizeValueDisplay.textContent = `${gridSpacing} PX`;
         });
 
         updateUI();
 
-        // === MOTOR GENERATIVO OPTIMIZADO (v5.0) ===
+        // Actualizar UI
+        function updateUI() {
+            let temp = parseInt(tempSlider.value);
+            tempDisplay.textContent = `${temp}°C`;
+            let pct = ((temp + 89) / 89) * 100;
+            // El anillo no existe en este HTML, pero mantenemos la lógica por si acaso.
+        }
+        tempSlider.addEventListener('input', updateUI);
+        
+        // === MOTOR GENERATIVO CORREGIDO PARA VARIANZA EN OSCURO ===
         function draw() {
-            ctx.fillStyle = '#000002'; 
+            ctx.fillStyle = palette[0]; // Fondo abisal más profundo
             ctx.fillRect(0, 0, width, height);
 
             let tempValue = Math.abs(parseInt(tempSlider.value)); 
-            let coldFactor = tempValue / 89; 
+            let coldFactor = tempValue / 89; // 0 (0°C) a 1 (-89°C)
 
-            // Usamos source-over con opacidad 0.9 para que los colores se superpongan
-            // pero sin quemarse hacia el blanco infinito.
-            ctx.globalCompositeOperation = 'source-over';
-
-            for (let x = -gridSpacing; x < width + gridSpacing; x += gridSpacing) {
-                for (let y = -gridSpacing; y < height + gridSpacing; y += gridSpacing) {
+            for (let x = 0; x < width + gridSpacing; x += gridSpacing) {
+                for (let y = 0; y < height + gridSpacing; y += gridSpacing) {
                     
-                    let wave1 = Math.sin((x * 0.003) + time);
-                    let wave2 = Math.cos((y * 0.004) - time);
-                    let wave3 = Math.sin(((x + y) * 0.002) + time * 0.4);
+                    let wave1 = Math.sin((x * 0.004) + time);
+                    let wave2 = Math.cos((y * 0.005) - time);
+                    let wave3 = Math.sin(((x + y) * 0.003) + time * 0.5);
                     
-                    let rawIntensity = (wave1 + wave2 + wave3 + 3) / 6;
-                    let energyBias = 0.20 - (coldFactor * 0.55); 
-                    let intensity = Math.max(0.01, Math.min(0.99, rawIntensity + energyBias));
+                    let intensity = (wave1 + wave2 + wave3 + 3) / 6;
+                    
+                    // El frío puro contrae el fluido, revelando más negro
+                    intensity -= (coldFactor * 0.25); 
+                    intensity = Math.max(0, Math.min(0.99, intensity));
 
-                    // El radio de solapamiento ideal para fluidez sin dañar FPS
-                    let maxRadius = gridSpacing * 1.4; 
+                    let maxRadius = gridSpacing * 0.75; 
                     let radius = intensity * maxRadius;
 
-                    if (radius < 1) continue;
-
+                    // --- LÓGICA DE COLOR CORREGIDA PARA VARIANZA EN OSCURO ---
+                    // Usamos siempre la paleta completa. La varianza en intensity creará varianza de color.
+                    // La reducción general de intensity por el coldFactor ya asegura un visual oscuro general.
+                    let colorIndex = Math.floor(intensity * palette.length);
+                    
                     ctx.beginPath();
                     ctx.arc(x, y, radius, 0, Math.PI * 2);
-                    // Dibujamos formas sólidas pero ligeramente translúcidas (0.9)
-                    ctx.fillStyle = getInterpolatedColor(intensity, 0.9);
+                    
+                    let c = palette[colorIndex];
+                    
+                    // Glow Selectivo (asegurándonos de que solo aplique a los colores de hielo/blanco)
+                    if (colorIndex >= glowThreshold) {
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = glowColor;
+                        ctx.globalAlpha = 1.0; // Glowing dots are fully visible.
+                    } else {
+                        ctx.shadowBlur = 0;
+                        // NO REDUCIMOS ALPHA TOTALMENTE. Mantenemos una opacidad alta
+                        // para que las tiny-dots y los sutiles cambios de color creen textura 'dark-on-dark'.
+                        ctx.globalAlpha = 0.8; 
+                    }
+
+                    ctx.fillStyle = c;
                     ctx.fill();
                 }
             }
 
-            // Aplicar Ruido
-            ctx.globalCompositeOperation = 'overlay'; 
-            ctx.drawImage(noiseCanvas, 0, 0);
-            ctx.globalCompositeOperation = 'source-over';
-
-            time += 0.012 + (coldFactor * 0.008); 
+            // Velocidad reactiva
+            time += 0.015 + (coldFactor * 0.01); 
             requestAnimationFrame(draw);
         }
         draw();
@@ -371,63 +350,116 @@
         function exportImage(ratioStr) {
             const tempCanvas = document.createElement('canvas');
             const tCtx = tempCanvas.getContext('2d');
-            let realW = window.innerWidth, realH = window.innerHeight;
-            let rW = ratioStr === '16:9' ? 16 : 3, rH = ratioStr === '16:9' ? 9 : 4;
-            let cropWidth = realW, cropHeight = (realW / rW) * rH;
-            if (cropHeight > realH) { cropHeight = realH; cropWidth = (realH / rH) * rW; }
-            tempCanvas.width = cropWidth; tempCanvas.height = cropHeight;
-            let sX = (realW - cropWidth) / 2, sY = (realH - cropHeight) / 2;
+            
+            let realW = window.innerWidth;
+            let realH = window.innerHeight;
+            let rW = ratioStr === '16:9' ? 16 : 3;
+            let rH = ratioStr === '16:9' ? 9 : 4;
+
+            let cropWidth = realW;
+            let cropHeight = (realW / rW) * rH;
+
+            if (cropHeight > realH) {
+                cropHeight = realH;
+                cropWidth = (realH / rH) * rW;
+            }
+
+            tempCanvas.width = cropWidth;
+            tempCanvas.height = cropHeight;
+
+            let sX = (realW - cropWidth) / 2;
+            let sY = (realH - cropHeight) / 2;
+            
             tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH);
+
             const link = document.createElement('a');
-            link.download = `vostok_sys_${ratioStr.replace(':','x')}.png`;
+            link.download = `vostok_gen_3_0_2_${ratioStr.replace(':','x')}.png`;
             link.href = tempCanvas.toDataURL('image/png', 1.0);
             link.click();
         }
 
-        let mediaRecorder; let recordedChunks = [];
+        let mediaRecorder;
+        let recordedChunks = [];
+        
         function exportVideo() {
             const btn = document.getElementById('btnVideo');
             if (btn.classList.contains('recording')) return; 
-            btn.classList.add('recording'); btn.innerHTML = `<span>REC...</span> <span>[!]</span>`;
+            
+            btn.classList.add('recording');
+            btn.textContent = "🔴 Grabando (5s)...";
             recordedChunks = [];
+
             const stream = canvas.captureStream(30);
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
-                const link = document.createElement('a'); link.download = `vostok_sys.webm`; link.href = url; link.click();
+                const link = document.createElement('a');
+                link.download = `vostok_gen_3_0_2.webm`;
+                link.href = url;
+                link.click();
                 URL.revokeObjectURL(url);
-                btn.classList.remove('recording'); btn.innerHTML = `<span>REC_WEBM</span> <span>[O]</span>`;
+                
+                btn.classList.remove('recording');
+                btn.textContent = "🎥 Export WebM";
             };
+
             mediaRecorder.start();
             setTimeout(() => mediaRecorder.stop(), 5000);
         }
 
         function exportGIF() {
-            if (typeof GIF === 'undefined') { alert("GIF.js inicializando."); return; }
+            if (typeof GIF === 'undefined') {
+                alert("GIF.js inicializando, intenta de nuevo.");
+                return;
+            }
+            
             const btn = document.getElementById('btnGif');
             if (btn.classList.contains('recording')) return;
-            btn.classList.add('recording'); btn.innerHTML = `<span>WAIT...</span> <span>[!]</span>`;
+            
+            btn.classList.add('recording');
+            btn.textContent = "⏳ Procesando...";
+
             const gifCanvas = document.createElement('canvas');
-            gifCanvas.width = 480; gifCanvas.height = 320;
+            gifCanvas.width = 480; 
+            gifCanvas.height = 320;
             const gCtx = gifCanvas.getContext('2d');
-            const gif = new GIF({ workers: 2, quality: 6, width: 480, height: 320, workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js' });
-            let framesCaptured = 0; const maxFrames = 40; 
+
+            const gif = new GIF({
+                workers: 2,
+                quality: 6,
+                width: 480,
+                height: 320,
+                workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
+            });
+
+            let framesCaptured = 0;
+            const maxFrames = 40; 
+
             function captureFrame() {
                 gCtx.drawImage(canvas, 0, 0, width, height, 0, 0, 480, 320);
                 gif.addFrame(gCtx, {copy: true, delay: 35});
+                
                 framesCaptured++;
-                if(framesCaptured < maxFrames) { requestAnimationFrame(captureFrame); } 
-                else { btn.innerHTML = `<span>PROC...</span> <span>[!]</span>`; gif.render(); }
+                if(framesCaptured < maxFrames) {
+                    requestAnimationFrame(captureFrame);
+                } else {
+                    btn.textContent = "⚙️ Renderizando...";
+                    gif.render();
+                }
             }
+
             gif.on('finished', function(blob) {
                 const url = URL.createObjectURL(blob);
-                const link = document.createElement('a'); link.download = 'vostok_sys.gif'; link.href = url; link.click();
-                btn.classList.remove('recording'); btn.innerHTML = `<span>EXP_GIF</span> <span>[>]</span>`;
-            });
-            captureFrame();
-        }
-    </script>
-</body>
-</html>
+                const link = document.createElement('a');
+                link.download = 'vostok_gen_3_0_2.gif';
+                link.href = url;
+                link.click();
+                
+                btn.classList.remove('recording');
+                btn.textContent = "http://googleusercontent.com/image_generation_content/9
