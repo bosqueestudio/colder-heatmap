@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vostok Station | Frost Gen v3.0</title>
+    <title>Vostok Station | Frost Gen v4.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
         /* === UI/UX RESET & BASE === */
@@ -11,114 +11,142 @@
         body {
             background-color: #000000;
             color: #FFFFFF;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .visual-container {
-            position: relative;
             width: 100vw;
-            height: 100vh;
-            background-color: #000000;
         }
 
-        canvas {
-            display: block;
+        /* === CANVAS DE FONDO === */
+        #fluidCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* === CAPA DE INTERFAZ === */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Deja pasar los clics al canvas si se requiere */
+            display: flex;
+            justify-content: space-between;
+            padding: 2rem;
+        }
+
+        /* Permite interactuar solo con los paneles */
+        .panel {
+            pointer-events: auto; 
+        }
+
+        /* === WIDGET IZQUIERDO (ESTILO APP FITNESS) === */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
             height: 100%;
         }
 
-        /* === INTERFAZ DE USUARIO (GLASSMORPHISM) === */
-        .header-title {
-            position: absolute;
-            top: 1.5rem;
-            left: 1.5rem;
-            background: rgba(2, 4, 18, 0.4);
-            backdrop-filter: blur(12px);
-            padding: 0.8rem 1.2rem;
-            border-radius: 8px;
-            border: 1px solid rgba(186, 213, 239, 0.15);
-            font-size: 0.9rem;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            z-index: 10;
-        }
-
-        .ui-panel {
-            position: absolute;
-            bottom: 2.5rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(6, 12, 49, 0.35);
-            backdrop-filter: blur(20px);
-            padding: 1.8rem;
-            border-radius: 16px;
-            border: 1px solid rgba(186, 213, 239, 0.15);
+        .card {
+            background: rgba(22, 22, 24, 0.85); /* Gris muy oscuro, casi negro */
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 1.5rem;
+            width: 280px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
-            z-index: 10;
-            width: 90%;
-            max-width: 900px;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            gap: 1.2rem;
         }
 
-        .ui-row-1 {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 2.5rem;
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.5rem;
         }
 
-        .panel-left {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            flex-grow: 1;
-        }
-
-        .temp-display {
-            font-size: 3rem;
-            font-weight: 300;
-            min-width: 140px;
-            letter-spacing: -1px;
-            text-shadow: 0 4px 12px rgba(186, 213, 239, 0.3);
-        }
-
-        .slider-wrapper {
-            flex-grow: 1;
+        /* === CÍRCULO DE TEMPERATURA === */
+        .circle-wrapper {
             display: flex;
             align-items: center;
             gap: 1rem;
         }
 
-        .slider-wrapper span {
-            font-size: 0.8rem;
-            color: #BAD5EF;
-            opacity: 0.6;
+        .progress-ring-container {
+            position: relative;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            /* El fondo hace de pista oscura */
+            background: #2a2a2c;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* El anillo que se llena con la temperatura */
+        .progress-ring {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(#ffffff 0%, #ffffff var(--fill-pct, 50%), transparent var(--fill-pct, 50%), transparent 100%);
+            mask: radial-gradient(transparent 58%, black 60%);
+            -webkit-mask: radial-gradient(transparent 58%, black 60%);
+        }
+
+        .temp-display-circle {
+            font-size: 1.2rem;
             font-weight: 600;
+            z-index: 2;
+        }
+
+        .widget-labels {
+            display: flex;
+            flex-direction: column;
+        }
+        .widget-title { font-size: 0.95rem; font-weight: 600; }
+        .widget-subtitle { font-size: 0.75rem; color: #8E8E93; margin-top: 2px;}
+
+        /* === SLIDERS === */
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #8E8E93;
+            font-weight: 500;
         }
 
         input[type=range] {
-            flex-grow: 1;
             -webkit-appearance: none;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
+            width: 100%;
+            height: 6px;
+            background: #2a2a2c;
+            border-radius: 3px;
             outline: none;
         }
         
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 12px; height: 24px;
-            border-radius: 3px;
+            width: 16px; height: 16px;
+            border-radius: 50%;
             background: #FFFFFF;
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(255,255,255,0.9);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
             transition: transform 0.1s ease;
         }
 
@@ -126,112 +154,133 @@
             transform: scale(1.2);
         }
 
-        .panel-right {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.6rem;
-            min-width: 260px;
+        .divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0.5rem 0;
+        }
+
+        /* === BARRA VERTICAL DERECHA (TOOLINGS) === */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            background: rgba(22, 22, 24, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 0.8rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
 
         button {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(218, 235, 255, 0.8);
-            border: 1px solid rgba(186, 213, 239, 0.2);
-            padding: 0.6rem 1rem;
-            border-radius: 6px;
+            background: #2a2a2c;
+            color: #FFFFFF;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
             cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.25s ease;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.65rem;
             font-weight: 500;
+            gap: 4px;
+            transition: all 0.2s ease;
         }
 
         button:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: #FFFFFF;
-            border-color: rgba(255, 255, 255, 0.6);
+            background: #3a3a3c;
+            transform: scale(1.05);
         }
 
         button.recording {
             background: #e74c3c;
-            color: white;
-            border-color: #e74c3c;
             animation: pulse 1s infinite;
         }
 
+        .icon { font-size: 1.1rem; }
+
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
+            50% { transform: scale(1.08); }
             100% { transform: scale(1); }
-        }
-
-        .ui-row-2 {
-            background: rgba(6, 12, 49, 0.4);
-            backdrop-filter: blur(12px);
-            padding: 1.2rem;
-            border-radius: 8px;
-            border: 1px solid rgba(186, 213, 239, 0.15);
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .size-label {
-            font-size: 0.9rem;
-            color: #BAD5EF;
-            min-width: 120px;
-        }
-
-        #sizeSliderWrapper {
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        #sizeSliderWrapper span {
-            font-size: 0.8rem;
-            color: #BAD5EF;
-            opacity: 0.6;
         }
 
     </style>
 </head>
 <body>
 
-    <div class="visual-container">
-        <div class="header-title">Vostok Station, Antarctica | Frost Gen v3.0</div>
+    <canvas id="fluidCanvas"></canvas>
+    
+    <div class="ui-layer">
         
-        <canvas id="fluidCanvas"></canvas>
-        
-        <div class="ui-panel">
-            <div class="ui-row-1">
-                <div class="panel-left">
-                    <div class="temp-display" id="tempDisplay">-45°C</div>
-                    <div class="slider-wrapper">
-                        <span>-89</span>
-                        <input type="range" id="tempSlider" min="-89" max="0" value="-45">
-                        <span>0</span>
+        <div class="panel left-panel">
+            <div class="card">
+                <div class="header-title">Vostok</div>
+                
+                <div class="circle-wrapper">
+                    <div class="progress-ring-container" id="ringContainer" style="--fill-pct: 50%;">
+                        <div class="progress-ring"></div>
+                        <div class="temp-display-circle" id="tempDisplay">-45°</div>
+                    </div>
+                    <div class="widget-labels">
+                        <div class="widget-title">Core Temp</div>
+                        <div class="widget-subtitle">Antarctica Station</div>
                     </div>
                 </div>
-                
-                <div class="panel-right">
-                    <button onclick="exportImage('16:9')">📸 Img 16:9</button>
-                    <button onclick="exportImage('3:4')">📸 Img 3:4</button>
-                    <button onclick="exportGIF()" id="btnGif">🎞️ Export GIF</button>
-                    <button onclick="exportVideo()" id="btnVideo">🎥 Export WebM</button>
-                </div>
-            </div>
 
-            <div class="ui-row-2">
-                <div class="size-label">Halftone Size:</div>
-                <div id="sizeSliderWrapper">
-                    <span>Nítido</span>
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span>-89°C</span>
+                        <span>0°C</span>
+                    </div>
+                    <input type="range" id="tempSlider" min="-89" max="0" value="-45">
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="slider-container">
+                    <div class="slider-header">
+                        <span style="color: #FFFFFF; font-size: 0.85rem;">Halftone Density</span>
+                        <span id="sizeValueDisplay">22px</span>
+                    </div>
                     <input type="range" id="sizeSlider" min="10" max="40" value="22">
-                    <span>Granular</span>
                 </div>
             </div>
         </div>
+
+        <div class="panel right-panel">
+            <div class="toolbar">
+                <button onclick="exportImage('16:9')">
+                    <span class="icon">📸</span>
+                    16:9
+                </button>
+                <button onclick="exportImage('3:4')">
+                    <span class="icon">📱</span>
+                    3:4
+                </button>
+                <div class="divider" style="margin: 0;"></div>
+                <button onclick="exportGIF()" id="btnGif">
+                    <span class="icon">🎞️</span>
+                    GIF
+                </button>
+                <button onclick="exportVideo()" id="btnVideo">
+                    <span class="icon">🎥</span>
+                    REC
+                </button>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -239,25 +288,25 @@
         const ctx = canvas.getContext('2d');
         const tempSlider = document.getElementById('tempSlider');
         const tempDisplay = document.getElementById('tempDisplay');
+        const ringContainer = document.getElementById('ringContainer');
         const sizeSlider = document.getElementById('sizeSlider');
+        const sizeValueDisplay = document.getElementById('sizeValueDisplay');
         
         let width, height;
         let time = 0;
-
         let gridSpacing = 22; 
 
-        // Paleta de colores completa basada en tu referencia
         const palette = [
-            '#010208', // 0: Negro Abisal
-            '#060C31', // 1: Azul Muy Oscuro
-            '#132378', // 2: Royal Transición
-            '#2244C4', // 3: Azul Eléctrico
-            '#BAD5EF', // 4: Hielo Claro
-            '#ffffff'  // 5: Blanco Puro
+            '#010208', // Negro Abisal
+            '#060C31', // Azul Muy Oscuro
+            '#132378', // Royal Transición
+            '#2244C4', // Azul Eléctrico
+            '#BAD5EF', // Hielo Claro
+            '#ffffff'  // Blanco Puro
         ];
 
         const glowThreshold = 3; 
-        const glowColor = '#50e3c233'; // Brillo incandescente cian suave
+        const glowColor = '#50e3c233'; 
 
         function resize() {
             width = window.innerWidth;
@@ -268,51 +317,57 @@
         window.addEventListener('resize', resize);
         resize();
 
-        tempSlider.addEventListener('input', (e) => {
-            tempDisplay.textContent = `${e.target.value}°C`;
-        });
+        // Actualización de UI en vivo
+        function updateUI() {
+            let temp = parseInt(tempSlider.value);
+            tempDisplay.textContent = `${temp}°`;
+            
+            // Calculamos porcentaje para rellenar el anillo (0 = 100%, -89 = 0%)
+            let pct = ((temp + 89) / 89) * 100;
+            ringContainer.style.setProperty('--fill-pct', `${pct}%`);
+        }
 
+        tempSlider.addEventListener('input', updateUI);
+        
         sizeSlider.addEventListener('input', (e) => {
             gridSpacing = parseInt(e.target.value);
+            sizeValueDisplay.textContent = `${gridSpacing}px`;
         });
 
-        // === MOTOR GENERATIVO DE ENERGÍA TÉRMICA ===
+        // Inicializar UI
+        updateUI();
+
+        // === MOTOR GENERATIVO CORREGIDO ===
         function draw() {
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, width, height);
 
             let tempValue = Math.abs(parseInt(tempSlider.value)); 
-            let coldFactor = tempValue / 89; // 0 (0°C) a 1 (-89°C)
+            let coldFactor = tempValue / 89; 
 
             for (let x = 0; x < width + gridSpacing; x += gridSpacing) {
                 for (let y = 0; y < height + gridSpacing; y += gridSpacing) {
                     
-                    // 1. Ondas de plasma orgánico
                     let wave1 = Math.sin((x * 0.004) + time);
                     let wave2 = Math.cos((y * 0.005) - time);
                     let wave3 = Math.sin(((x + y) * 0.003) + time * 0.5);
                     
                     let rawIntensity = (wave1 + wave2 + wave3 + 3) / 6;
                     
-                    // 2. Control de Energía Térmica
-                    // A 0°C expande las ondas permitiendo luces altas. A -89°C contrae la energía hacia el oscuro.
                     let energyBias = 0.15 - (coldFactor * 0.5); 
                     let intensity = rawIntensity + energyBias;
                     
                     intensity = Math.max(0, Math.min(0.99, intensity));
 
-                    // 3. El radio máximo escala con el slider de tamaño
                     let maxRadius = gridSpacing * 0.75; 
                     let radius = intensity * maxRadius;
 
-                    // 4. Mapeo fluido en toda la paleta
                     let colorIndex = Math.floor(intensity * palette.length);
                     let c = palette[colorIndex];
                     
                     ctx.beginPath();
                     ctx.arc(x, y, radius, 0, Math.PI * 2);
                     
-                    // Glow Selectivo para tonos claros y medios
                     if (colorIndex >= glowThreshold) {
                         ctx.shadowBlur = 18;
                         ctx.shadowColor = glowColor;
@@ -325,7 +380,6 @@
                 }
             }
 
-            // El movimiento se ralentiza fluidamente con el frío
             time += 0.015 + (coldFactor * 0.01); 
             requestAnimationFrame(draw);
         }
@@ -358,7 +412,7 @@
             tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH);
 
             const link = document.createElement('a');
-            link.download = `frost_gen_3_0_${ratioStr.replace(':','x')}.png`;
+            link.download = `vostok_gen_${ratioStr.replace(':','x')}.png`;
             link.href = tempCanvas.toDataURL('image/png', 1.0);
             link.click();
         }
@@ -371,7 +425,7 @@
             if (btn.classList.contains('recording')) return; 
             
             btn.classList.add('recording');
-            btn.textContent = "🔴 Grabando (5s)...";
+            btn.innerHTML = `<span class="icon">🔴</span> REC`;
             recordedChunks = [];
 
             const stream = canvas.captureStream(30);
@@ -385,13 +439,13 @@
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = `frost_gen_3_0.webm`;
+                link.download = `vostok_gen.webm`;
                 link.href = url;
                 link.click();
                 URL.revokeObjectURL(url);
                 
                 btn.classList.remove('recording');
-                btn.textContent = "🎥 Export WebM";
+                btn.innerHTML = `<span class="icon">🎥</span> REC`;
             };
 
             mediaRecorder.start();
@@ -408,7 +462,7 @@
             if (btn.classList.contains('recording')) return;
             
             btn.classList.add('recording');
-            btn.textContent = "⏳ Procesando...";
+            btn.innerHTML = `<span class="icon">⏳</span> WAIT`;
 
             const gifCanvas = document.createElement('canvas');
             gifCanvas.width = 480; 
@@ -434,7 +488,7 @@
                 if(framesCaptured < maxFrames) {
                     requestAnimationFrame(captureFrame);
                 } else {
-                    btn.textContent = "⚙️ Renderizando...";
+                    btn.innerHTML = `<span class="icon">⚙️</span> PROC`;
                     gif.render();
                 }
             }
@@ -442,12 +496,12 @@
             gif.on('finished', function(blob) {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = 'frost_gen_3_0.gif';
+                link.download = 'vostok_gen.gif';
                 link.href = url;
                 link.click();
                 
                 btn.classList.remove('recording');
-                btn.textContent = "🎞️ Export GIF";
+                btn.innerHTML = `<span class="icon">🎞️</span> GIF`;
             });
 
             captureFrame();
