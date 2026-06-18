@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -43,7 +43,7 @@
             pointer-events: none; 
             display: flex;
             padding: 2rem;
-            align-items: center; /* Centra la tarjeta verticalmente */
+            align-items: center;
         }
 
         /* === COMMAND CENTER CARD === */
@@ -59,6 +59,8 @@
             gap: 1.5rem;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(10px);
+            transition: opacity 0.6s ease; /* Transición suave para el auto-fade */
+            opacity: 1;
         }
 
         /* HEADER */
@@ -140,7 +142,7 @@
     
     <div class="ui-layer">
         
-        <div class="command-center">
+        <div class="command-center" id="commandCenter">
             
             <div class="header">
                 <span class="app-title">VOSTOK WEATHER</span>
@@ -195,10 +197,25 @@
         const ringContainer = document.getElementById('ringContainer');
         const sizeSlider = document.getElementById('sizeSlider');
         const sizeValueDisplay = document.getElementById('sizeValueDisplay');
+        const commandCenter = document.getElementById('commandCenter');
         
         let width, height;
         let time = 0;
         let gridSpacing = 18; 
+
+        // AUTO-FADE UI LOGIC
+        let idleTimer;
+        function resetIdleTimer() {
+            commandCenter.style.opacity = '1';
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                commandCenter.style.opacity = '0';
+            }, 2000); // Se oculta tras 2 segundos de inactividad
+        }
+        window.addEventListener('mousemove', resetIdleTimer);
+        window.addEventListener('mousedown', resetIdleTimer);
+        window.addEventListener('touchstart', resetIdleTimer);
+        resetIdleTimer(); // Inicializar
 
         // 13-Tone Deep Palette
         const hexPalette = [
