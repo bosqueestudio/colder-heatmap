@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frost Gen v2.4 - Dynamic Halftone</title>
+    <title>Vostok Station | Frost Gen v3.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
         /* === UI/UX RESET & BASE === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: #000000; /* Fondo puramente negro para el contraste del halftone */
+            background-color: #000000; /* Fondo abisal absoluto */
             color: #FFFFFF;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
@@ -26,19 +26,18 @@
             background-color: #000000;
         }
 
-        /* Canvas nítido para los puntos */
         canvas {
             display: block;
             width: 100%;
             height: 100%;
         }
 
-        /* === INTERFAZ DE USUARIO (Mantenida Verbatim) === */
+        /* === INTERFAZ DE USUARIO (GLASSMORPHISM) === */
         .header-title {
             position: absolute;
             top: 1.5rem;
             left: 1.5rem;
-            background: rgba(2, 4, 18, 0.5);
+            background: rgba(2, 4, 18, 0.4);
             backdrop-filter: blur(12px);
             padding: 0.8rem 1.2rem;
             border-radius: 8px;
@@ -54,19 +53,26 @@
             bottom: 2.5rem;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(6, 12, 49, 0.4);
+            background: rgba(6, 12, 49, 0.35);
             backdrop-filter: blur(20px);
             padding: 1.8rem;
             border-radius: 16px;
-            border: 1px solid rgba(186, 213, 239, 0.2);
+            border: 1px solid rgba(186, 213, 239, 0.15);
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 2.5rem;
+            flex-direction: column;
+            gap: 1.5rem;
             z-index: 10;
             width: 90%;
             max-width: 900px;
             box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+        }
+
+        /* Layout de la UI en dos filas */
+        .ui-row-1 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2.5rem;
         }
 
         .panel-left {
@@ -94,7 +100,7 @@
         .slider-wrapper span {
             font-size: 0.8rem;
             color: #BAD5EF;
-            opacity: 0.8;
+            opacity: 0.6;
             font-weight: 600;
         }
 
@@ -102,7 +108,7 @@
             flex-grow: 1;
             -webkit-appearance: none;
             height: 4px;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
             border-radius: 2px;
             outline: none;
         }
@@ -129,9 +135,9 @@
         }
 
         button {
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(218, 235, 255, 0.9);
-            border: 1px solid rgba(186, 213, 239, 0.25);
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(218, 235, 255, 0.8);
+            border: 1px solid rgba(186, 213, 239, 0.2);
             padding: 0.6rem 1rem;
             border-radius: 6px;
             cursor: pointer;
@@ -142,9 +148,9 @@
         }
 
         button:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
             color: #FFFFFF;
-            border-color: rgba(255, 255, 255, 0.8);
+            border-color: rgba(255, 255, 255, 0.6);
         }
 
         button.recording {
@@ -156,31 +162,76 @@
 
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
+            50= { transform: scale(1.03); }
             100% { transform: scale(1); }
         }
+
+        /* === NUEVO CONTROL DE TAMAÑO === */
+        .ui-row-2 {
+            background: rgba(6, 12, 49, 0.4);
+            backdrop-filter: blur(12px);
+            padding: 1.2rem;
+            border-radius: 8px;
+            border: 1px solid rgba(186, 213, 239, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .size-label {
+            font-size: 0.9rem;
+            color: #BAD5EF;
+            min-width: 120px;
+        }
+
+        #sizeSliderWrapper {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        #sizeSliderWrapper span {
+            font-size: 0.8rem;
+            color: #BAD5EF;
+            opacity: 0.6;
+        }
+
     </style>
 </head>
 <body>
 
     <div class="visual-container">
-        <div class="header-title">Vostok Station, Antarctica | Frost Gen v2.4</div>
+        <div class="header-title">Vostok Station, Antarctica | Frost Gen v3.0</div>
+        
         <canvas id="fluidCanvas"></canvas>
+        
         <div class="ui-panel">
-            <div class="panel-left">
-                <div class="temp-display" id="tempDisplay">-45°C</div>
-                <div class="slider-wrapper">
-                    <span>-89</span>
-                    <input type="range" id="tempSlider" min="-89" max="0" value="-45">
-                    <span>0</span>
+            <div class="ui-row-1">
+                <div class="panel-left">
+                    <div class="temp-display" id="tempDisplay">-45°C</div>
+                    <div class="slider-wrapper">
+                        <span>-89</span>
+                        <input type="range" id="tempSlider" min="-89" max="0" value="-45">
+                        <span>0</span>
+                    </div>
+                </div>
+                
+                <div class="panel-right">
+                    <button onclick="exportImage('16:9')">📸 Img 16:9</button>
+                    <button onclick="exportImage('3:4')">📸 Img 3:4</button>
+                    <button onclick="exportGIF()" id="btnGif">🎞️ Export GIF</button>
+                    <button onclick="exportVideo()" id="btnVideo">🎥 Export WebM</button>
                 </div>
             </div>
-            
-            <div class="panel-right">
-                <button onclick="exportImage('16:9')">📸 Img 16:9</button>
-                <button onclick="exportImage('3:4')">📸 Img 3:4</button>
-                <button onclick="exportGIF()" id="btnGif">🎞️ Export GIF</button>
-                <button onclick="exportVideo()" id="btnVideo">🎥 Export WebM</button>
+
+            <div class="ui-row-2">
+                <div class="size-label">Halftone Size:</div>
+                <div id="sizeSliderWrapper">
+                    <span>Nítido</span>
+                    <input type="range" id="sizeSlider" min="10" max="40" value="22">
+                    <span>Granular</span>
+                </div>
             </div>
         </div>
     </div>
@@ -190,22 +241,27 @@
         const ctx = canvas.getContext('2d');
         const tempSlider = document.getElementById('tempSlider');
         const tempDisplay = document.getElementById('tempDisplay');
+        const sizeSlider = document.getElementById('sizeSlider');
         
         let width, height;
         let time = 0;
 
-        // === CONFIGURACIÓN DEL HALFTONE ===
-        // Distancia entre los centros de los puntos
-        const gridSpacing = 22; 
-        
-        // Paleta base (el fondo será siempre negro #000000 para el contraste máximo)
+        // Variable global para el espaciado, controlada por el slider
+        let gridSpacing = 22; 
+
+        // Paleta extendida de image_16.png
         const palette = [
-            '#060C31', // Azul muy oscuro (puntos pequeños)
-            '#16267E', // Royal
-            '#3a6fd9', // Azul eléctrico
-            '#BAD5EF', // Hielo (puntos grandes)
-            '#ffffff'  // Blanco puro (puntos fusionados)
+            '#010208', // Negro Abisal
+            '#060C31', // Azul Muy Oscuro
+            '#132378', // Royal Transición
+            '#2244C4', // Azul Eléctrico
+            '#BAD5EF', // Hielo Claro
+            '#ffffff'  // Blanco Puro
         ];
+
+        // Definimos qué colores tienen glow (tonos medios y claros)
+        const glowThreshold = 3; // palette[3], [4], [5] tienen glow
+        const glowColor = '#50e3c233'; // Color cian cálido incandescente para el glow
 
         function resize() {
             width = window.innerWidth;
@@ -216,51 +272,93 @@
         window.addEventListener('resize', resize);
         resize();
 
+        // Listeners de UI
         tempSlider.addEventListener('input', (e) => {
             tempDisplay.textContent = `${e.target.value}°C`;
         });
 
-        // === MOTOR GENERATIVO HALFTONE ===
+        // Actualizar el espaciado global con el slider de tamaño
+        sizeSlider.addEventListener('input', (e) => {
+            gridSpacing = parseInt(e.target.value);
+        });
+
+        // === MOTOR GENERATIVO FROST HEATMAP (v3.0) ===
         function draw() {
-            // Fondo negro absoluto para resaltar los puntos luminosos
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, width, height);
 
             let tempValue = Math.abs(parseInt(tempSlider.value)); 
-            let coldFactor = tempValue / 89; // 0 a 1
+            let coldFactor = tempValue / 89; // 0 (0°C) a 1 (-89°C)
 
-            // Recorremos la cuadrícula
+            // Recorremos la cuadrícula basada en gridSpacing
             for (let x = 0; x < width + gridSpacing; x += gridSpacing) {
                 for (let y = 0; y < height + gridSpacing; y += gridSpacing) {
                     
-                    // Matemáticas fluidas orgánicas (crean manchas tipo metaballs)
-                    let wave1 = Math.sin((x * 0.004) + (time * 0.9));
-                    let wave2 = Math.cos((y * 0.005) - (time * 1.1));
-                    let wave3 = Math.sin(((x + y) * 0.003) + (time * 0.5));
+                    // Matemáticas orgánicas marcadas tipo plasma
+                    let wave1 = Math.sin((x * 0.004) + time);
+                    let wave2 = Math.cos((y * 0.005) - time);
+                    let wave3 = Math.sin(((x + y) * 0.003) + time * 0.5);
                     
-                    // Combinamos las ondas (-3 a 3) y normalizamos (0 a 1)
-                    let rawIntensity = wave1 + wave2 + wave3;
-                    let intensity = (rawIntensity + 3) / 6;
+                    // Combinamos ondas (-3 a 3) y normalizamos (0 a 1)
+                    let intensity = (wave1 + wave2 + wave3 + 3) / 6;
                     
-                    // El frío contrae el fluido (hace que haya más negro)
-                    intensity -= (coldFactor * 0.35);
+                    // El frío contrae el fluido, revelando más negro
+                    intensity -= (coldFactor * 0.3);
                     
-                    // Limitamos la intensidad entre 0 y 1
                     intensity = Math.max(0, Math.min(0.99, intensity));
 
-                    // Si la intensidad es muy baja, no dibujamos nada (ahorra GPU y crea vacíos negros)
-                    if (intensity < 0.1) continue;
-
-                    // El radio máximo es mayor que el espaciado para que los puntos se solapen en zonas intensas
+                    // Si hace más calor (coldFactor bajo), los puntos son claros
+                    // Si hace más frío (coldFactor alto), los puntos son oscuros
+                    // Mapeo inverso: coldFactor 0 -> usa colores claros. coldFactor 1 -> usa colores oscuros.
                     let maxRadius = gridSpacing * 0.75; 
                     let radius = intensity * maxRadius;
 
-                    // Asignamos color basado en la intensidad
-                    let colorIndex = Math.floor(intensity * palette.length);
+                    // Lógica de color reactiva: Mapeamos la gama de colores accesible por la temperatura
+                    // A 0°C (coldFactor 0), la intensidad 1 usa palette[5].
+                    // A -89°C (coldFactor 1), la intensidad 1 usa palette[palette.length - 1 - Math.floor(palette.length/2)].
+                    let effectivePaletteLen = palette.length - Math.floor(coldFactor * (palette.length / 2));
+                    effectivePaletteLen = Math.max(1, effectivePaletteLen); // Asegurar longitud
+                    let colorIndex = Math.min(palette.length - 1, Math.floor(intensity * effectivePaletteLen));
+                    
+                    // Invertir índice de color para que intensity alta = color claro
+                    // Y para cumplir 0°C claro / -89°C oscuro.
+                    let baseColorIndex = palette.length - 1 - Math.floor(intensity * palette.length);
+                    // Pero reajustado por el coldFactor para restringir gama clara.
+                    colorIndex = palette.length - 1 - Math.floor(intensity * effectivePaletteLen);
+                    
+                    // Mapeo final ajustado a la gama:
+                    // 0°C (cF 0): effectivePaletteLen ~ 6. Intensity 1 -> 6 - 1 - 5 = 0 (palette[0] - negro - OK)
+                    //             Intensity 0 -> 6 - 1 - 0 = 5 (palette[5] - blanco - OK)
+                    // -89°C (cF 1): effectivePaletteLen ~ 3. Intensity 1 -> 3 - 1 - 2 = 0 (palette[0] - OK)
+                    //             Intensity 0 -> 3 - 1 - 0 = 2 (palette[2] - OK)
+                    
+                    let finalColorIndex = effectivePaletteLen - 1 - Math.floor(intensity * effectivePaletteLen);
+                    // Invertir para que intensidad alta sea color claro
+                    finalColorIndex = palette.length - effectivePaletteLen + Math.floor(intensity * effectivePaletteLen);
+
+                    let finalColor = palette[Math.min(palette.length-1, Math.floor(intensity * effectivePaletteLen) + (palette.length - effectivePaletteLen))];
+                    
+                    // Lógica final simplificada para mapear gama clara a 0 y oscura a -89.
+                    // cF 0 -> usa gama completa. cF 1 -> usa gama oscura.
+                    let startRange = Math.floor(coldFactor * (palette.length / 2));
+                    let endRange = palette.length;
+                    colorIndex = Math.floor(intensity * (endRange - startRange)) + startRange;
                     
                     ctx.beginPath();
                     ctx.arc(x, y, radius, 0, Math.PI * 2);
-                    ctx.fillStyle = palette[colorIndex];
+                    
+                    let c = palette[Math.min(palette.length-1, colorIndex)];
+                    
+                    // === GLOW SELECTIVO ===
+                    //palette[startRange], [startRange+1], ... son accesibles.
+                    if (colorIndex >= glowThreshold) {
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = glowColor;
+                    } else {
+                        ctx.shadowBlur = 0;
+                    }
+
+                    ctx.fillStyle = c;
                     ctx.fill();
                 }
             }
@@ -295,10 +393,11 @@
             let sX = (realW - cropWidth) / 2;
             let sY = (realH - cropHeight) / 2;
             
+            // Renderizar frame actual
             tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH);
 
             const link = document.createElement('a');
-            link.download = `frost_halftone_${ratioStr.replace(':','x')}.png`;
+            link.download = `frost_gen_3_0_${ratioStr.replace(':','x')}.png`;
             link.href = tempCanvas.toDataURL('image/png', 1.0);
             link.click();
         }
@@ -325,7 +424,7 @@
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = `frost_halftone_loop.webm`;
+                link.download = `frost_gen_3_0.webm`;
                 link.href = url;
                 link.click();
                 URL.revokeObjectURL(url);
@@ -340,7 +439,7 @@
 
         function exportGIF() {
             if (typeof GIF === 'undefined') {
-                alert("GIF.js inicializando, intenta en un segundo.");
+                alert("GIF.js inicializando, intenta de nuevo.");
                 return;
             }
             
@@ -382,16 +481,9 @@
             gif.on('finished', function(blob) {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = 'frost_halftone.gif';
+                link.download = 'frost_gen_3_0.gif';
                 link.href = url;
                 link.click();
                 
                 btn.classList.remove('recording');
-                btn.textContent = "🎞️ Export GIF";
-            });
-
-            captureFrame();
-        }
-    </script>
-</body>
-</html>
+                btn.textContent = "http://googleusercontent.com/image_generation_content/6
