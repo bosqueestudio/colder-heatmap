@@ -1,13 +1,12 @@
  <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOSTOK [SYS.CORE] - Frost Gen v5.2 (13-Tone Abyss)</title>
+    <title>Vostok Weather | Fluid Frost Generator</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
-        /* === RESET & HUD BASE === */
+        /* === RESET & BASE === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background-color: #000;
@@ -27,7 +26,6 @@
             z-index: 0;
         }
 
-        /* === SCANLINES === */
         .scanlines {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -37,21 +35,20 @@
             pointer-events: none;
         }
 
-        /* === CAPA DE UI === */
+        /* === UI LAYER === */
         .ui-layer {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10;
             pointer-events: none; 
             display: flex;
-            justify-content: space-between;
             padding: 2rem;
+            align-items: center; /* Centra la tarjeta verticalmente */
         }
 
-        .panel { pointer-events: auto; }
-
-        /* === HUD CARDS (BRUTALIST) === */
-        .hud-box {
+        /* === COMMAND CENTER CARD === */
+        .command-center {
+            pointer-events: auto;
             background: rgba(2, 4, 12, 0.85); 
             border: 1px solid rgba(186, 213, 239, 0.3);
             border-left: 4px solid #BAD5EF;
@@ -60,88 +57,80 @@
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
-            box-shadow: 0 0 20px rgba(6, 12, 49, 0.8);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
         }
 
-        .sys-header {
+        /* HEADER */
+        .header {
             display: flex; justify-content: space-between;
             border-bottom: 1px solid rgba(186, 213, 239, 0.2);
-            padding-bottom: 0.5rem; margin-bottom: 0.5rem;
+            padding-bottom: 0.8rem;
         }
-
-        .sys-title { font-weight: 700; color: #FFFFFF; letter-spacing: 2px; }
-        .sys-status { color: #50e3c2; animation: blink 2s infinite; }
+        .app-title { font-weight: 700; color: #FFFFFF; letter-spacing: 1px; }
+        .live-indicator { color: #50e3c2; animation: blink 2s infinite; display: flex; align-items: center; gap: 4px;}
+        .dot { width: 6px; height: 6px; background-color: #50e3c2; border-radius: 50%; }
 
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        /* === DATA READOUT === */
-        .readout-container { display: flex; align-items: center; gap: 1.5rem; }
-
-        .gauge-ring {
-            position: relative;
-            width: 80px; height: 80px;
-            border-radius: 50%;
-            border: 1px solid rgba(186, 213, 239, 0.2);
+        /* TEMPERATURE READOUT */
+        .readout { display: flex; align-items: center; gap: 1.5rem; }
+        
+        .gauge {
+            position: relative; width: 70px; height: 70px;
+            border-radius: 50%; border: 1px solid rgba(186, 213, 239, 0.2);
             display: flex; justify-content: center; align-items: center;
         }
-
         .gauge-fill {
-            position: absolute;
-            top: 4px; left: 4px; right: 4px; bottom: 4px;
+            position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
             border-radius: 50%;
             background: conic-gradient(#BAD5EF 0%, #BAD5EF var(--fill-pct, 50%), transparent var(--fill-pct, 50%), transparent 100%);
             mask: radial-gradient(transparent 60%, black 62%);
             -webkit-mask: radial-gradient(transparent 60%, black 62%);
         }
-
-        .temp-val { font-size: 1.5rem; font-weight: 700; color: #FFF; z-index: 2; }
+        .temp-val { font-size: 1.4rem; font-weight: 700; color: #FFF; z-index: 2; }
         
-        .data-labels div { margin-bottom: 4px; }
-        .lbl-main { color: #FFF; font-weight: 700; }
-        .lbl-sub { color: rgba(186, 213, 239, 0.6); font-size: 10px; }
+        .labels div { margin-bottom: 4px; }
+        .lbl-title { color: #FFF; font-weight: 700; font-size: 14px;}
+        .lbl-desc { color: rgba(186, 213, 239, 0.6); font-size: 10px; }
 
-        /* === SLIDERS === */
-        .control-group { display: flex; flex-direction: column; gap: 0.8rem; }
+        /* SLIDERS */
+        .controls { display: flex; flex-direction: column; gap: 1.2rem; }
+        .slider-wrapper { display: flex; flex-direction: column; gap: 0.6rem; }
+        .slider-header { display: flex; justify-content: space-between; font-size: 10px; color: #BAD5EF; }
         
-        .ctrl-header {
-            display: flex; justify-content: space-between;
-            font-size: 10px; color: #BAD5EF;
-        }
-
         input[type=range] {
-            -webkit-appearance: none;
-            width: 100%; height: 2px;
-            background: rgba(186, 213, 239, 0.3);
-            outline: none;
+            -webkit-appearance: none; width: 100%; height: 2px;
+            background: rgba(186, 213, 239, 0.3); outline: none;
         }
-        
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 10px; height: 18px;
+            -webkit-appearance: none; width: 10px; height: 18px;
             background: #BAD5EF; cursor: pointer; border-radius: 0; 
         }
         input[type=range]::-webkit-slider-thumb:hover { background: #FFFFFF; }
 
-        /* === TOOLBAR DERECHA === */
-        .right-panel { display: flex; flex-direction: column; align-items: flex-end; gap: 1rem; }
+        /* ACTIONS SECTION */
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-top: 0.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(186, 213, 239, 0.2);
+        }
 
-        .btn-tech {
+        .btn {
             background: rgba(2, 4, 12, 0.8); color: #BAD5EF;
             border: 1px solid rgba(186, 213, 239, 0.3);
-            padding: 0.8rem; cursor: pointer;
+            padding: 0.8rem 0.5rem; cursor: pointer;
             font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
-            letter-spacing: 1px; transition: all 0.2s;
-            width: 120px; text-align: left;
-            display: flex; justify-content: space-between;
+            transition: all 0.2s; text-align: center;
         }
 
-        .btn-tech:hover { background: rgba(186, 213, 239, 0.2); color: #FFF; border-color: #FFF; }
-        .btn-tech.recording { background: #4a0000; color: #ff4444; border-color: #ff4444; animation: blink 1s infinite; }
+        .btn:hover { background: rgba(186, 213, 239, 0.2); color: #FFF; border-color: #FFF; }
+        .btn.full { grid-column: 1 / -1; }
+        .btn.recording { background: #4a0000; color: #ff4444; border-color: #ff4444; animation: blink 1s infinite; }
 
-        .coord-overlay {
-            position: absolute; bottom: 2rem; left: 2rem;
-            color: rgba(186, 213, 239, 0.4); font-size: 10px; pointer-events: none;
-        }
     </style>
 </head>
 <body>
@@ -150,54 +139,51 @@
     <div class="scanlines"></div>
     
     <div class="ui-layer">
-        <div class="panel left-panel">
-            <div class="hud-box">
-                <div class="sys-header">
-                    <span class="sys-title">VOSTOK_STATION</span>
-                    <span class="sys-status">[ONLINE]</span>
+        
+        <div class="command-center">
+            
+            <div class="header">
+                <span class="app-title">VOSTOK WEATHER</span>
+                <span class="live-indicator"><span class="dot"></span> LIVE</span>
+            </div>
+            
+            <div class="readout">
+                <div class="gauge" id="ringContainer" style="--fill-pct: 50%;">
+                    <div class="gauge-fill"></div>
+                    <div class="temp-val" id="tempDisplay">-45°</div>
                 </div>
-                
-                <div class="readout-container">
-                    <div class="gauge-ring" id="ringContainer" style="--fill-pct: 50%;">
-                        <div class="gauge-fill"></div>
-                        <div class="temp-val" id="tempDisplay">-45°</div>
-                    </div>
-                    <div class="data-labels">
-                        <div class="lbl-main">CORE_THERMAL</div>
-                        <div class="lbl-sub">LAT: -78.4645</div>
-                        <div class="lbl-sub">LON: 106.8340</div>
-                    </div>
+                <div class="labels">
+                    <div class="lbl-title">CURRENT TEMP</div>
+                    <div class="lbl-desc">ANTARCTIC CONDITIONS</div>
                 </div>
+            </div>
 
-                <div class="control-group">
-                    <div class="ctrl-header">
-                        <span>CALIBRATE_TEMP</span>
-                        <span id="tempValSub">-45.00 C</span>
+            <div class="controls">
+                <div class="slider-wrapper">
+                    <div class="slider-header">
+                        <span>TEMPERATURE</span>
+                        <span id="tempValSub">-45°C</span>
                     </div>
                     <input type="range" id="tempSlider" min="-89" max="0" value="-45">
                 </div>
 
-                <div class="control-group" style="margin-top: 10px;">
-                    <div class="ctrl-header">
-                        <span>PLASMA_DENSITY</span>
+                <div class="slider-wrapper">
+                    <div class="slider-header">
+                        <span>STORM DENSITY</span>
                         <span id="sizeValueDisplay">18 PX</span>
                     </div>
                     <input type="range" id="sizeSlider" min="8" max="35" value="18">
                 </div>
             </div>
+
+            <div class="actions">
+                <button class="btn" onclick="exportImage('16:9')">IMAGE 16:9</button>
+                <button class="btn" onclick="exportImage('4:5')">IMAGE 4:5</button>
+                <button class="btn full" onclick="exportVideo()" id="btnVideo">DOWNLOAD VIDEO</button>
+            </div>
+
         </div>
 
-        <div class="panel right-panel">
-            <button class="btn-tech" onclick="exportImage('16:9')"><span>IMG_16:9</span> <span>[+]</span></button>
-            <button class="btn-tech" onclick="exportImage('3:4')"><span>IMG_3:4</span> <span>[+]</span></button>
-            <button class="btn-tech" onclick="exportGIF()" id="btnGif" style="margin-top: 1rem;"><span>EXP_GIF</span> <span>[>]</span></button>
-            <button class="btn-tech" onclick="exportVideo()" id="btnVideo"><span>REC_WEBM</span> <span>[O]</span></button>
-        </div>
-
-        <div class="coord-overlay">
-            RENDER_ENGINE: FROST_GEN_V5.2<br>
-            OUTPUT: 13-TONE_FLUID_AUTOMATA
-        </div>
     </div>
 
     <script>
@@ -214,22 +200,11 @@
         let time = 0;
         let gridSpacing = 18; 
 
-        // === PALETA ULTRA-PROFUNDA (13 TONOS) ===
-        // Múltiples micropasos inyectados para destruir la "plasta" oscura
+        // 13-Tone Deep Palette
         const hexPalette = [
-            '#000000', // 0: Negro absoluto
-            '#010206', // 1: Micropaso 1
-            '#02040D', // 2: Micropaso 2
-            '#030614', // 3: Ruido ultra oscuro
-            '#060B24', // 4: Micropaso 3
-            '#0A153A', // 5: Azul profundo
-            '#101D5C', // 6: Micropaso 4
-            '#162A82', // 7: Royal oscuro
-            '#1C37A3', // 8: Micropaso 5
-            '#2244C4', // 9: Azul eléctrico
-            '#7ba4cf', // 10: Transición hielo
-            '#BAD5EF', // 11: Hielo
-            '#ffffff'  // 12: Blanco puro
+            '#000000', '#010206', '#02040D', '#030614', '#060B24', 
+            '#0A153A', '#101D5C', '#162A82', '#1C37A3', '#2244C4', 
+            '#7ba4cf', '#BAD5EF', '#ffffff' 
         ];
         
         const rgbPalette = hexPalette.map(hex => {
@@ -237,7 +212,6 @@
             return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
         });
 
-        // Función de interpolación continua adaptada a 13 colores
         function getInterpolatedColor(intensity, alpha = 1) {
             let t = Math.max(0, Math.min(0.999, intensity));
             let scaledT = t * (rgbPalette.length - 1);
@@ -254,7 +228,6 @@
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
-        // Ruido Fotográfico (Generado una vez)
         const noiseCanvas = document.createElement('canvas');
         const noiseCtx = noiseCanvas.getContext('2d');
         function generateNoise() {
@@ -278,7 +251,7 @@
         function updateUI() {
             let temp = parseInt(tempSlider.value);
             tempDisplay.textContent = `${temp}°`;
-            tempValSub.textContent = `${temp}.00 C`;
+            tempValSub.textContent = `${temp}°C`;
             let pct = ((temp + 89) / 89) * 100;
             ringContainer.style.setProperty('--fill-pct', `${pct}%`);
         }
@@ -289,7 +262,7 @@
         });
         updateUI();
 
-        // === MOTOR PLASMA FLUIDO ===
+        // GENERATIVE ENGINE
         function draw() {
             ctx.fillStyle = '#000000'; 
             ctx.fillRect(0, 0, width, height);
@@ -307,7 +280,6 @@
                     let wave3 = Math.sin(((x + y) * 0.002) + time * 0.4);
                     
                     let rawIntensity = (wave1 + wave2 + wave3 + 3) / 6;
-                    
                     let energyBias = 0.20 - (coldFactor * 0.45); 
                     let intensity = Math.max(0.0, Math.min(0.999, rawIntensity + energyBias));
 
@@ -318,13 +290,11 @@
 
                     ctx.beginPath();
                     ctx.arc(x, y, radius, 0, Math.PI * 2);
-                    
                     ctx.fillStyle = getInterpolatedColor(intensity, 0.95);
                     ctx.fill();
                 }
             }
 
-            // Aplicar Ruido
             ctx.globalCompositeOperation = 'overlay'; 
             ctx.drawImage(noiseCanvas, 0, 0);
             ctx.globalCompositeOperation = 'source-over';
@@ -334,54 +304,48 @@
         }
         draw();
 
-        // === SISTEMA DE EXPORTACIÓN ===
+        // EXPORT SYSTEM
         function exportImage(ratioStr) {
             const tempCanvas = document.createElement('canvas'); const tCtx = tempCanvas.getContext('2d');
             let realW = window.innerWidth, realH = window.innerHeight;
-            let rW = ratioStr === '16:9' ? 16 : 3, rH = ratioStr === '16:9' ? 9 : 4;
+            
+            // Adjusted logic for 4:5 ratio
+            let rW = ratioStr === '16:9' ? 16 : 4; 
+            let rH = ratioStr === '16:9' ? 9 : 5;
+            
             let cropWidth = realW, cropHeight = (realW / rW) * rH;
             if (cropHeight > realH) { cropHeight = realH; cropWidth = (realH / rH) * rW; }
+            
             tempCanvas.width = cropWidth; tempCanvas.height = cropHeight;
             let sX = (realW - cropWidth) / 2, sY = (realH - cropHeight) / 2;
+            
             tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH);
-            const link = document.createElement('a'); link.download = `vostok_sys_${ratioStr.replace(':','x')}.png`;
+            
+            const link = document.createElement('a'); 
+            link.download = `vostok_weather_${ratioStr.replace(':','x')}.png`;
             link.href = tempCanvas.toDataURL('image/png', 1.0); link.click();
         }
 
         let mediaRecorder; let recordedChunks = [];
         function exportVideo() {
             const btn = document.getElementById('btnVideo'); if (btn.classList.contains('recording')) return; 
-            btn.classList.add('recording'); btn.innerHTML = `<span>REC...</span> <span>[!]</span>`; recordedChunks = [];
-            const stream = canvas.captureStream(30); mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            btn.classList.add('recording'); btn.textContent = `RECORDING... PLEASE WAIT`; recordedChunks = [];
+            
+            const stream = canvas.captureStream(30); 
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            
             mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob);
-                const link = document.createElement('a'); link.download = `vostok_sys.webm`; link.href = url; link.click();
-                URL.revokeObjectURL(url); btn.classList.remove('recording'); btn.innerHTML = `<span>REC_WEBM</span> <span>[O]</span>`;
+                const blob = new Blob(recordedChunks, { type: 'video/webm' }); 
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a'); 
+                link.download = `vostok_weather_render.webm`; 
+                link.href = url; link.click();
+                URL.revokeObjectURL(url); 
+                btn.classList.remove('recording'); btn.textContent = `DOWNLOAD VIDEO`;
             };
+            
             mediaRecorder.start(); setTimeout(() => mediaRecorder.stop(), 5000);
-        }
-
-        function exportGIF() {
-            if (typeof GIF === 'undefined') { alert("GIF.js inicializando."); return; }
-            const btn = document.getElementById('btnGif'); if (btn.classList.contains('recording')) return;
-            btn.classList.add('recording'); btn.innerHTML = `<span>WAIT...</span> <span>[!]</span>`;
-            const gifCanvas = document.createElement('canvas'); gifCanvas.width = 480; gifCanvas.height = 320;
-            const gCtx = gifCanvas.getContext('2d');
-            const gif = new GIF({ workers: 2, quality: 6, width: 480, height: 320, workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js' });
-            let framesCaptured = 0; const maxFrames = 40; 
-            function captureFrame() {
-                gCtx.drawImage(canvas, 0, 0, width, height, 0, 0, 480, 320); gif.addFrame(gCtx, {copy: true, delay: 35});
-                framesCaptured++;
-                if(framesCaptured < maxFrames) { requestAnimationFrame(captureFrame); } 
-                else { btn.innerHTML = `<span>PROC...</span> <span>[!]</span>`; gif.render(); }
-            }
-            gif.on('finished', function(blob) {
-                const url = URL.createObjectURL(blob); const link = document.createElement('a');
-                link.download = 'vostok_sys.gif'; link.href = url; link.click();
-                btn.classList.remove('recording'); btn.innerHTML = `<span>EXP_GIF</span> <span>[>]</span>`;
-            });
-            captureFrame();
         }
     </script>
 </body>
