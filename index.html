@@ -32,7 +32,7 @@
             height: 100%;
         }
 
-        /* === INTERFAZ DE USUARIO === */
+        /* === INTERFAZ DE USUARIO (GLASSMORPHISM) === */
         .header-title {
             position: absolute;
             top: 1.5rem;
@@ -246,7 +246,7 @@
 
         let gridSpacing = 22; 
 
-        // Paleta base 
+        // Paleta de colores completa basada en tu referencia
         const palette = [
             '#010208', // 0: Negro Abisal
             '#060C31', // 1: Azul Muy Oscuro
@@ -257,7 +257,7 @@
         ];
 
         const glowThreshold = 3; 
-        const glowColor = '#50e3c233'; 
+        const glowColor = '#50e3c233'; // Brillo incandescente cian suave
 
         function resize() {
             width = window.innerWidth;
@@ -276,7 +276,7 @@
             gridSpacing = parseInt(e.target.value);
         });
 
-        // === MOTOR GENERATIVO CORREGIDO ===
+        // === MOTOR GENERATIVO DE ENERGÍA TÉRMICA ===
         function draw() {
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, width, height);
@@ -287,30 +287,34 @@
             for (let x = 0; x < width + gridSpacing; x += gridSpacing) {
                 for (let y = 0; y < height + gridSpacing; y += gridSpacing) {
                     
+                    // 1. Ondas de plasma orgánico
                     let wave1 = Math.sin((x * 0.004) + time);
                     let wave2 = Math.cos((y * 0.005) - time);
                     let wave3 = Math.sin(((x + y) * 0.003) + time * 0.5);
                     
-                    let intensity = (wave1 + wave2 + wave3 + 3) / 6;
+                    let rawIntensity = (wave1 + wave2 + wave3 + 3) / 6;
                     
-                    intensity -= (coldFactor * 0.15); 
+                    // 2. Control de Energía Térmica
+                    // A 0°C expande las ondas permitiendo luces altas. A -89°C contrae la energía hacia el oscuro.
+                    let energyBias = 0.15 - (coldFactor * 0.5); 
+                    let intensity = rawIntensity + energyBias;
+                    
                     intensity = Math.max(0, Math.min(0.99, intensity));
 
+                    // 3. El radio máximo escala con el slider de tamaño
                     let maxRadius = gridSpacing * 0.75; 
                     let radius = intensity * maxRadius;
 
-                    // Mapeo perfecto: 0°C (offset 3) usa índices 3,4,5. -89°C (offset 0) usa índices 0,1,2
-                    let offset = Math.floor((1 - coldFactor) * 3); 
-                    let localIndex = Math.floor(intensity * 3); 
-                    let colorIndex = Math.min(palette.length - 1, offset + localIndex);
-
+                    // 4. Mapeo fluido en toda la paleta
+                    let colorIndex = Math.floor(intensity * palette.length);
+                    let c = palette[colorIndex];
+                    
                     ctx.beginPath();
                     ctx.arc(x, y, radius, 0, Math.PI * 2);
                     
-                    let c = palette[colorIndex];
-                    
+                    // Glow Selectivo para tonos claros y medios
                     if (colorIndex >= glowThreshold) {
-                        ctx.shadowBlur = 15;
+                        ctx.shadowBlur = 18;
                         ctx.shadowColor = glowColor;
                     } else {
                         ctx.shadowBlur = 0;
@@ -321,12 +325,13 @@
                 }
             }
 
+            // El movimiento se ralentiza fluidamente con el frío
             time += 0.015 + (coldFactor * 0.01); 
             requestAnimationFrame(draw);
         }
         draw();
 
-        // === EXPORTACIÓN ===
+        // === SISTEMA DE EXPORTACIÓN ===
         function exportImage(ratioStr) {
             const tempCanvas = document.createElement('canvas');
             const tCtx = tempCanvas.getContext('2d');
