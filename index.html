@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOSTOK [SYS.CORE] - Frost Gen v5.1 (Deep Fluid)</title>
+    <title>VOSTOK [SYS.CORE] - Frost Gen v5.2 (13-Tone Abyss)</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
@@ -195,8 +195,8 @@
         </div>
 
         <div class="coord-overlay">
-            RENDER_ENGINE: FROST_GEN_V5.1<br>
-            OUTPUT: FLUID_CELLULAR_AUTOMATA
+            RENDER_ENGINE: FROST_GEN_V5.2<br>
+            OUTPUT: 13-TONE_FLUID_AUTOMATA
         </div>
     </div>
 
@@ -214,17 +214,22 @@
         let time = 0;
         let gridSpacing = 18; 
 
-        // === PALETA CON VARIANZA ABISAL ===
-        // Añadimos múltiples pasos en los oscuros para que no se haga una "plasta"
+        // === PALETA ULTRA-PROFUNDA (13 TONOS) ===
+        // Múltiples micropasos inyectados para destruir la "plasta" oscura
         const hexPalette = [
-            '#000000', // 0: Vacío total
-            '#030614', // 1: Ruido ultra oscuro
-            '#0A153A', // 2: Azul profundo
-            '#162A82', // 3: Royal oscuro
-            '#2244C4', // 4: Azul eléctrico
-            '#7ba4cf', // 5: Transición hielo
-            '#BAD5EF', // 6: Hielo
-            '#ffffff'  // 7: Blanco puro
+            '#000000', // 0: Negro absoluto
+            '#010206', // 1: Micropaso 1
+            '#02040D', // 2: Micropaso 2
+            '#030614', // 3: Ruido ultra oscuro
+            '#060B24', // 4: Micropaso 3
+            '#0A153A', // 5: Azul profundo
+            '#101D5C', // 6: Micropaso 4
+            '#162A82', // 7: Royal oscuro
+            '#1C37A3', // 8: Micropaso 5
+            '#2244C4', // 9: Azul eléctrico
+            '#7ba4cf', // 10: Transición hielo
+            '#BAD5EF', // 11: Hielo
+            '#ffffff'  // 12: Blanco puro
         ];
         
         const rgbPalette = hexPalette.map(hex => {
@@ -232,7 +237,7 @@
             return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
         });
 
-        // Función de interpolación continua
+        // Función de interpolación continua adaptada a 13 colores
         function getInterpolatedColor(intensity, alpha = 1) {
             let t = Math.max(0, Math.min(0.999, intensity));
             let scaledT = t * (rgbPalette.length - 1);
@@ -258,7 +263,7 @@
             const buffer = new Uint32Array(imgData.data.buffer);
             for (let i = 0; i < buffer.length; i++) {
                 let shade = Math.random() * 255;
-                buffer[i] = (14 << 24) | (shade << 16) | (shade << 8) | shade; // 14 opacidad del ruido
+                buffer[i] = (14 << 24) | (shade << 16) | (shade << 8) | shade; 
             }
             noiseCtx.putImageData(imgData, 0, 0);
         }
@@ -284,7 +289,7 @@
         });
         updateUI();
 
-        // === MOTOR PLASMA FLUIDO + PROFUNDIDAD DE SOMBRAS ===
+        // === MOTOR PLASMA FLUIDO ===
         function draw() {
             ctx.fillStyle = '#000000'; 
             ctx.fillRect(0, 0, width, height);
@@ -303,11 +308,9 @@
                     
                     let rawIntensity = (wave1 + wave2 + wave3 + 3) / 6;
                     
-                    // Ajustamos el bias para que las zonas frías sigan fluctuando entre los primeros 4 colores
                     let energyBias = 0.20 - (coldFactor * 0.45); 
                     let intensity = Math.max(0.0, Math.min(0.999, rawIntensity + energyBias));
 
-                    // Solapamiento orgánico fluido
                     let maxRadius = gridSpacing * 1.45; 
                     let radius = intensity * maxRadius;
 
@@ -316,7 +319,6 @@
                     ctx.beginPath();
                     ctx.arc(x, y, radius, 0, Math.PI * 2);
                     
-                    // Utilizamos alpha 0.95 para suavizar, pero la paleta se encarga de la oscuridad real
                     ctx.fillStyle = getInterpolatedColor(intensity, 0.95);
                     ctx.fill();
                 }
