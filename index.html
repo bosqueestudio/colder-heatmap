@@ -3,29 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vostok Station | Frost Gen v4.1 (Fluid Engine)</title>
+    <title>VOSTOK [SYS.CORE] - Frost Gen v5.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
-        /* === UI/UX BASE (Se mantiene igual por ahora) === */
+        /* === RESET & HUD BASE === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: #000000;
-            color: #FFFFFF;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000;
+            color: #BAD5EF; /* Azul hielo como color de texto base */
+            font-family: 'Space Mono', monospace;
             overflow: hidden;
             height: 100vh;
             width: 100vw;
+            text-transform: uppercase;
+            font-size: 12px;
         }
 
         #fluidCanvas {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 0;
         }
 
+        /* === GRID/SCANLINES OVERLAY OPCIONAL === */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* === CAPA DE UI === */
         .ui-layer {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -38,137 +50,168 @@
 
         .panel { pointer-events: auto; }
 
-        .left-panel { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-
-        .card {
-            background: rgba(22, 22, 24, 0.85); 
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 24px;
+        /* === HUD CARDS (BRUTALIST) === */
+        .hud-box {
+            background: rgba(2, 4, 12, 0.85); 
+            border: 1px solid rgba(186, 213, 239, 0.3);
+            border-left: 4px solid #BAD5EF; /* Acento HUD */
             padding: 1.5rem;
-            width: 280px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            width: 320px;
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
+            gap: 1.5rem;
+            box-shadow: 0 0 20px rgba(6, 12, 49, 0.8);
         }
 
-        .header-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
+        .sys-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(186, 213, 239, 0.2);
+            padding-bottom: 0.5rem;
             margin-bottom: 0.5rem;
         }
 
-        .circle-wrapper { display: flex; align-items: center; gap: 1rem; }
+        .sys-title { font-weight: 700; color: #FFFFFF; letter-spacing: 2px; }
+        .sys-status { color: #50e3c2; animation: blink 2s infinite; }
 
-        .progress-ring-container {
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* === DATA READOUT (TEMPERATURE) === */
+        .readout-container {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .gauge-ring {
             position: relative;
-            width: 70px; height: 70px;
+            width: 80px; height: 80px;
             border-radius: 50%;
-            background: #2a2a2c;
+            border: 1px solid rgba(186, 213, 239, 0.2);
             display: flex; justify-content: center; align-items: center;
         }
 
-        .progress-ring {
+        .gauge-fill {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 4px; left: 4px; right: 4px; bottom: 4px;
             border-radius: 50%;
-            background: conic-gradient(#ffffff 0%, #ffffff var(--fill-pct, 50%), transparent var(--fill-pct, 50%), transparent 100%);
-            mask: radial-gradient(transparent 58%, black 60%);
-            -webkit-mask: radial-gradient(transparent 58%, black 60%);
+            background: conic-gradient(#BAD5EF 0%, #BAD5EF var(--fill-pct, 50%), transparent var(--fill-pct, 50%), transparent 100%);
+            mask: radial-gradient(transparent 60%, black 62%);
+            -webkit-mask: radial-gradient(transparent 60%, black 62%);
         }
 
-        .temp-display-circle { font-size: 1.2rem; font-weight: 600; z-index: 2; }
+        .temp-val { font-size: 1.5rem; font-weight: 700; color: #FFF; z-index: 2; }
+        
+        .data-labels div { margin-bottom: 4px; }
+        .lbl-main { color: #FFF; font-weight: 700; }
+        .lbl-sub { color: rgba(186, 213, 239, 0.6); font-size: 10px; }
 
-        .widget-labels { display: flex; flex-direction: column; }
-        .widget-title { font-size: 0.95rem; font-weight: 600; }
-        .widget-subtitle { font-size: 0.75rem; color: #8E8E93; margin-top: 2px;}
-
-        .slider-container { display: flex; flex-direction: column; gap: 0.5rem; }
-
-        .slider-header {
+        /* === SLIDERS (TECH STYLE) === */
+        .control-group { display: flex; flex-direction: column; gap: 0.8rem; }
+        
+        .ctrl-header {
             display: flex; justify-content: space-between;
-            font-size: 0.75rem; color: #8E8E93; font-weight: 500;
+            font-size: 10px; color: #BAD5EF;
         }
 
         input[type=range] {
             -webkit-appearance: none;
-            width: 100%; height: 6px; background: #2a2a2c;
-            border-radius: 3px; outline: none;
+            width: 100%; height: 2px;
+            background: rgba(186, 213, 239, 0.3);
+            outline: none;
         }
         
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 16px; height: 16px; border-radius: 50%;
-            background: #FFFFFF; cursor: pointer;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); transition: transform 0.1s ease;
+            width: 10px; height: 18px;
+            background: #BAD5EF;
+            cursor: pointer;
+            border-radius: 0; /* Rectangular tech thumb */
         }
-        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+        
+        input[type=range]::-webkit-slider-thumb:hover { background: #FFFFFF; }
 
-        .divider { height: 1px; background: rgba(255, 255, 255, 0.1); margin: 0.5rem 0; }
+        /* === TOOLBAR DERECHA === */
+        .right-panel { display: flex; flex-direction: column; align-items: flex-end; gap: 1rem; }
 
-        .right-panel { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-
-        .toolbar {
-            display: flex; flex-direction: column; gap: 0.8rem;
-            background: rgba(22, 22, 24, 0.85); backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 20px;
-            padding: 0.8rem; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        .btn-tech {
+            background: rgba(2, 4, 12, 0.8);
+            color: #BAD5EF;
+            border: 1px solid rgba(186, 213, 239, 0.3);
+            padding: 0.8rem;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            width: 120px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
         }
 
-        button {
-            background: #2a2a2c; color: #FFFFFF; border: none;
-            width: 50px; height: 50px; border-radius: 14px;
-            cursor: pointer; display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            font-size: 0.65rem; font-weight: 500; gap: 4px; transition: all 0.2s ease;
+        .btn-tech:hover {
+            background: rgba(186, 213, 239, 0.2);
+            color: #FFF;
+            border-color: #FFF;
         }
 
-        button:hover { background: #3a3a3c; transform: scale(1.05); }
-        button.recording { background: #e74c3c; animation: pulse 1s infinite; }
-        .icon { font-size: 1.1rem; }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-            100% { transform: scale(1); }
+        .btn-tech.recording {
+            background: #4a0000;
+            color: #ff4444;
+            border-color: #ff4444;
+            animation: blink 1s infinite;
         }
+
+        .coord-overlay {
+            position: absolute;
+            bottom: 2rem; left: 2rem;
+            color: rgba(186, 213, 239, 0.4);
+            font-size: 10px;
+            pointer-events: none;
+        }
+
     </style>
 </head>
 <body>
 
     <canvas id="fluidCanvas"></canvas>
+    <div class="scanlines"></div>
     
     <div class="ui-layer">
+        
         <div class="panel left-panel">
-            <div class="card">
-                <div class="header-title">Vostok</div>
-                <div class="circle-wrapper">
-                    <div class="progress-ring-container" id="ringContainer" style="--fill-pct: 50%;">
-                        <div class="progress-ring"></div>
-                        <div class="temp-display-circle" id="tempDisplay">-45°</div>
+            <div class="hud-box">
+                <div class="sys-header">
+                    <span class="sys-title">VOSTOK_STATION</span>
+                    <span class="sys-status">[ONLINE]</span>
+                </div>
+                
+                <div class="readout-container">
+                    <div class="gauge-ring" id="ringContainer" style="--fill-pct: 50%;">
+                        <div class="gauge-fill"></div>
+                        <div class="temp-val" id="tempDisplay">-45°</div>
                     </div>
-                    <div class="widget-labels">
-                        <div class="widget-title">Core Temp</div>
-                        <div class="widget-subtitle">Antarctica Station</div>
+                    <div class="data-labels">
+                        <div class="lbl-main">CORE_THERMAL</div>
+                        <div class="lbl-sub">LAT: -78.4645</div>
+                        <div class="lbl-sub">LON: 106.8340</div>
                     </div>
                 </div>
 
-                <div class="slider-container">
-                    <div class="slider-header">
-                        <span>-89°C</span>
-                        <span>0°C</span>
+                <div class="control-group">
+                    <div class="ctrl-header">
+                        <span>CALIBRATE_TEMP</span>
+                        <span id="tempValSub">-45.00 C</span>
                     </div>
                     <input type="range" id="tempSlider" min="-89" max="0" value="-45">
                 </div>
 
-                <div class="divider"></div>
-
-                <div class="slider-container">
-                    <div class="slider-header">
-                        <span style="color: #FFFFFF; font-size: 0.85rem;">Plasma Density</span>
-                        <span id="sizeValueDisplay">18px</span>
+                <div class="control-group" style="margin-top: 10px;">
+                    <div class="ctrl-header">
+                        <span>PLASMA_DENSITY</span>
+                        <span id="sizeValueDisplay">18 PX</span>
                     </div>
                     <input type="range" id="sizeSlider" min="8" max="35" value="18">
                 </div>
@@ -176,13 +219,23 @@
         </div>
 
         <div class="panel right-panel">
-            <div class="toolbar">
-                <button onclick="exportImage('16:9')"><span class="icon">📸</span> 16:9</button>
-                <button onclick="exportImage('3:4')"><span class="icon">📱</span> 3:4</button>
-                <div class="divider" style="margin: 0;"></div>
-                <button onclick="exportGIF()" id="btnGif"><span class="icon">🎞️</span> GIF</button>
-                <button onclick="exportVideo()" id="btnVideo"><span class="icon">🎥</span> REC</button>
-            </div>
+            <button class="btn-tech" onclick="exportImage('16:9')">
+                <span>IMG_16:9</span> <span>[+]</span>
+            </button>
+            <button class="btn-tech" onclick="exportImage('3:4')">
+                <span>IMG_3:4</span> <span>[+]</span>
+            </button>
+            <button class="btn-tech" onclick="exportGIF()" id="btnGif" style="margin-top: 1rem;">
+                <span>EXP_GIF</span> <span>[>]</span>
+            </button>
+            <button class="btn-tech" onclick="exportVideo()" id="btnVideo">
+                <span>REC_WEBM</span> <span>[O]</span>
+            </button>
+        </div>
+
+        <div class="coord-overlay">
+            RENDER_ENGINE: FROST_GEN_V5<br>
+            OUTPUT: FLUID_CELLULAR_AUTOMATA
         </div>
     </div>
 
@@ -191,6 +244,7 @@
         const ctx = canvas.getContext('2d');
         const tempSlider = document.getElementById('tempSlider');
         const tempDisplay = document.getElementById('tempDisplay');
+        const tempValSub = document.getElementById('tempValSub');
         const ringContainer = document.getElementById('ringContainer');
         const sizeSlider = document.getElementById('sizeSlider');
         const sizeValueDisplay = document.getElementById('sizeValueDisplay');
@@ -199,16 +253,15 @@
         let time = 0;
         let gridSpacing = 18; 
 
-        // Paleta base 
+        // Paleta base recuperada 
         const hexPalette = ['#010208', '#060C31', '#132378', '#2244C4', '#BAD5EF', '#ffffff'];
         
-        // Convertir HEX a RGB para la interpolación matemática
         const rgbPalette = hexPalette.map(hex => {
             let v = parseInt(hex.replace('#', ''), 16);
             return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
         });
 
-        // 1. FUNCIÓN DE MEZCLA DE COLORES (El secreto del gradiente fluido)
+        // Interpolación lineal de color suave
         function getInterpolatedColor(intensity, alpha = 1) {
             let t = Math.max(0, Math.min(0.999, intensity));
             let scaledT = t * (rgbPalette.length - 1);
@@ -225,7 +278,7 @@
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
-        // 2. CAPA DE RUIDO (Film Grain)
+        // Ruido Fotográfico
         const noiseCanvas = document.createElement('canvas');
         const noiseCtx = noiseCanvas.getContext('2d');
         function generateNoise() {
@@ -234,9 +287,8 @@
             const imgData = noiseCtx.createImageData(width, height);
             const buffer = new Uint32Array(imgData.data.buffer);
             for (let i = 0; i < buffer.length; i++) {
-                // Genera estática en blanco y negro con opacidad baja (aprox 6-8%)
                 let shade = Math.random() * 255;
-                buffer[i] = (15 << 24) | (shade << 16) | (shade << 8) | shade;
+                buffer[i] = (12 << 24) | (shade << 16) | (shade << 8) | shade; // 12/255 opacidad
             }
             noiseCtx.putImageData(imgData, 0, 0);
         }
@@ -246,7 +298,7 @@
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
-            generateNoise(); // Regenerar ruido al tamaño exacto
+            generateNoise();
         }
         window.addEventListener('resize', resize);
         resize();
@@ -254,6 +306,7 @@
         function updateUI() {
             let temp = parseInt(tempSlider.value);
             tempDisplay.textContent = `${temp}°`;
+            tempValSub.textContent = `${temp}.00 C`;
             let pct = ((temp + 89) / 89) * 100;
             ringContainer.style.setProperty('--fill-pct', `${pct}%`);
         }
@@ -262,24 +315,25 @@
         
         sizeSlider.addEventListener('input', (e) => {
             gridSpacing = parseInt(e.target.value);
-            sizeValueDisplay.textContent = `${gridSpacing}px`;
+            sizeValueDisplay.textContent = `${gridSpacing} PX`;
         });
 
         updateUI();
 
-        // === MOTOR GENERATIVO: PLASMA CONTINUO ===
+        // === MOTOR GENERATIVO OPTIMIZADO (v5.0) ===
         function draw() {
-            ctx.fillStyle = '#010208'; // Color abisal base
+            ctx.fillStyle = '#000002'; 
             ctx.fillRect(0, 0, width, height);
 
             let tempValue = Math.abs(parseInt(tempSlider.value)); 
             let coldFactor = tempValue / 89; 
 
-            // Para que parezca fluido, usamos global composite operation
-            ctx.globalCompositeOperation = 'lighter';
+            // Usamos source-over con opacidad 0.9 para que los colores se superpongan
+            // pero sin quemarse hacia el blanco infinito.
+            ctx.globalCompositeOperation = 'source-over';
 
-            for (let x = 0; x < width + gridSpacing; x += gridSpacing) {
-                for (let y = 0; y < height + gridSpacing; y += gridSpacing) {
+            for (let x = -gridSpacing; x < width + gridSpacing; x += gridSpacing) {
+                for (let y = -gridSpacing; y < height + gridSpacing; y += gridSpacing) {
                     
                     let wave1 = Math.sin((x * 0.003) + time);
                     let wave2 = Math.cos((y * 0.004) - time);
@@ -289,30 +343,23 @@
                     let energyBias = 0.20 - (coldFactor * 0.55); 
                     let intensity = Math.max(0.01, Math.min(0.99, rawIntensity + energyBias));
 
-                    // SUPERPOSICIÓN: Los radios ahora son un 180% del espaciado de cuadrícula
-                    let maxRadius = gridSpacing * 1.8; 
+                    // El radio de solapamiento ideal para fluidez sin dañar FPS
+                    let maxRadius = gridSpacing * 1.4; 
                     let radius = intensity * maxRadius;
 
-                    // Ignorar puntos casi invisibles para optimizar
                     if (radius < 1) continue;
-
-                    // Dibujar gradientes radiales para cada "nodo" para que se fusionen suavemente
-                    let radGrad = ctx.createRadialGradient(x, y, 0, x, y, radius);
-                    radGrad.addColorStop(0, getInterpolatedColor(intensity, 0.8));
-                    radGrad.addColorStop(1, getInterpolatedColor(intensity - 0.1, 0));
 
                     ctx.beginPath();
                     ctx.arc(x, y, radius, 0, Math.PI * 2);
-                    ctx.fillStyle = radGrad;
+                    // Dibujamos formas sólidas pero ligeramente translúcidas (0.9)
+                    ctx.fillStyle = getInterpolatedColor(intensity, 0.9);
                     ctx.fill();
                 }
             }
 
-            // Aplicar el Noise/Grano Fotográfico por encima de todo
-            ctx.globalCompositeOperation = 'overlay'; // Mezcla el ruido preservando el contraste
+            // Aplicar Ruido
+            ctx.globalCompositeOperation = 'overlay'; 
             ctx.drawImage(noiseCanvas, 0, 0);
-
-            // Restaurar modo normal
             ctx.globalCompositeOperation = 'source-over';
 
             time += 0.012 + (coldFactor * 0.008); 
@@ -320,7 +367,7 @@
         }
         draw();
 
-        // === SISTEMA DE EXPORTACIÓN (Sin cambios) ===
+        // === SISTEMA DE EXPORTACIÓN ===
         function exportImage(ratioStr) {
             const tempCanvas = document.createElement('canvas');
             const tCtx = tempCanvas.getContext('2d');
@@ -332,7 +379,7 @@
             let sX = (realW - cropWidth) / 2, sY = (realH - cropHeight) / 2;
             tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH);
             const link = document.createElement('a');
-            link.download = `vostok_gen_${ratioStr.replace(':','x')}.png`;
+            link.download = `vostok_sys_${ratioStr.replace(':','x')}.png`;
             link.href = tempCanvas.toDataURL('image/png', 1.0);
             link.click();
         }
@@ -341,7 +388,7 @@
         function exportVideo() {
             const btn = document.getElementById('btnVideo');
             if (btn.classList.contains('recording')) return; 
-            btn.classList.add('recording'); btn.innerHTML = `<span class="icon">🔴</span> REC`;
+            btn.classList.add('recording'); btn.innerHTML = `<span>REC...</span> <span>[!]</span>`;
             recordedChunks = [];
             const stream = canvas.captureStream(30);
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
@@ -349,19 +396,19 @@
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
-                const link = document.createElement('a'); link.download = `vostok_gen.webm`; link.href = url; link.click();
+                const link = document.createElement('a'); link.download = `vostok_sys.webm`; link.href = url; link.click();
                 URL.revokeObjectURL(url);
-                btn.classList.remove('recording'); btn.innerHTML = `<span class="icon">🎥</span> REC`;
+                btn.classList.remove('recording'); btn.innerHTML = `<span>REC_WEBM</span> <span>[O]</span>`;
             };
             mediaRecorder.start();
             setTimeout(() => mediaRecorder.stop(), 5000);
         }
 
         function exportGIF() {
-            if (typeof GIF === 'undefined') { alert("GIF.js inicializando, intenta de nuevo."); return; }
+            if (typeof GIF === 'undefined') { alert("GIF.js inicializando."); return; }
             const btn = document.getElementById('btnGif');
             if (btn.classList.contains('recording')) return;
-            btn.classList.add('recording'); btn.innerHTML = `<span class="icon">⏳</span> WAIT`;
+            btn.classList.add('recording'); btn.innerHTML = `<span>WAIT...</span> <span>[!]</span>`;
             const gifCanvas = document.createElement('canvas');
             gifCanvas.width = 480; gifCanvas.height = 320;
             const gCtx = gifCanvas.getContext('2d');
@@ -372,12 +419,12 @@
                 gif.addFrame(gCtx, {copy: true, delay: 35});
                 framesCaptured++;
                 if(framesCaptured < maxFrames) { requestAnimationFrame(captureFrame); } 
-                else { btn.innerHTML = `<span class="icon">⚙️</span> PROC`; gif.render(); }
+                else { btn.innerHTML = `<span>PROC...</span> <span>[!]</span>`; gif.render(); }
             }
             gif.on('finished', function(blob) {
                 const url = URL.createObjectURL(blob);
-                const link = document.createElement('a'); link.download = 'vostok_gen.gif'; link.href = url; link.click();
-                btn.classList.remove('recording'); btn.innerHTML = `<span class="icon">🎞️</span> GIF`;
+                const link = document.createElement('a'); link.download = 'vostok_sys.gif'; link.href = url; link.click();
+                btn.classList.remove('recording'); btn.innerHTML = `<span>EXP_GIF</span> <span>[>]</span>`;
             });
             captureFrame();
         }
