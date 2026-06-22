@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vostok Weather | Dynamic Topographic Generator</title>
+    <title>Vostok Weather | Brand Gradient System</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         /* === RESET & BASE === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: #000;
+            background-color: #060c31; /* Fondo base alineado al brand */
             color: #BAD5EF;
             font-family: 'Space Mono', monospace;
             overflow: hidden;
@@ -50,14 +50,14 @@
         .command-center {
             pointer-events: auto;
             background: rgba(2, 4, 12, 0.88); 
-            border: 1px solid rgba(186, 213, 239, 0.3);
-            border-left: 4px solid #BAD5EF;
+            border: 1px solid rgba(62, 99, 255, 0.4); /* Borde alineado al brand blue */
+            border-left: 4px solid #3e63ff;
             padding: 1.5rem;
             width: 320px;
             display: flex;
             flex-direction: column;
             gap: 1.2rem;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+            box-shadow: 0 0 40px rgba(6, 12, 49, 0.9);
             backdrop-filter: blur(10px);
             transition: opacity 0.6s ease;
             opacity: 1;
@@ -65,7 +65,7 @@
 
         .header {
             display: flex; justify-content: space-between;
-            border-bottom: 1px solid rgba(186, 213, 239, 0.2);
+            border-bottom: 1px solid rgba(62, 99, 255, 0.3);
             padding-bottom: 0.6rem;
         }
         .app-title { font-weight: 700; color: #FFFFFF; letter-spacing: 1px; }
@@ -78,13 +78,13 @@
         
         .gauge {
             position: relative; width: 65px; height: 65px;
-            border-radius: 50%; border: 1px solid rgba(186, 213, 239, 0.2);
+            border-radius: 50%; border: 1px solid rgba(62, 99, 255, 0.3);
             display: flex; justify-content: center; align-items: center;
         }
         .gauge-fill {
             position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px;
             border-radius: 50%;
-            background: conic-gradient(#BAD5EF 0%, #BAD5EF var(--fill-pct, 50%), transparent var(--fill-pct, 50%), transparent 100%);
+            background: conic-gradient(#ffffff 0%, #ffffff var(--fill-pct, 50%), transparent var(--fill-pct, 50%), transparent 100%);
             mask: radial-gradient(transparent 60%, black 62%);
             -webkit-mask: radial-gradient(transparent 60%, black 62%);
         }
@@ -92,22 +92,22 @@
         
         .labels div { margin-bottom: 2px; }
         .lbl-title { color: #FFF; font-weight: 700; font-size: 13px;}
-        .lbl-desc { color: rgba(186, 213, 239, 0.6); font-size: 10px; }
-        .lbl-telemetry { color: #50e3c2; font-size: 9px; font-family: monospace; }
+        .lbl-desc { color: rgba(186, 213, 239, 0.8); font-size: 10px; }
+        .lbl-telemetry { color: #3e63ff; font-size: 9px; font-family: monospace; font-weight: bold; }
 
         .controls { display: flex; flex-direction: column; gap: 1rem; }
         .slider-wrapper { display: flex; flex-direction: column; gap: 0.4rem; }
-        .slider-header { display: flex; justify-content: space-between; font-size: 10px; color: #BAD5EF; }
+        .slider-header { display: flex; justify-content: space-between; font-size: 10px; color: #dcf1ff; }
         
         input[type=range] {
             -webkit-appearance: none; width: 100%; height: 2px;
-            background: rgba(186, 213, 239, 0.3); outline: none;
+            background: rgba(62, 99, 255, 0.3); outline: none;
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none; width: 10px; height: 16px;
-            background: #BAD5EF; cursor: pointer; border-radius: 0; 
+            background: #ffffff; cursor: pointer; border-radius: 0; 
         }
-        input[type=range]::-webkit-slider-thumb:hover { background: #FFFFFF; }
+        input[type=range]::-webkit-slider-thumb:hover { background: #3e63ff; }
 
         .actions {
             display: grid;
@@ -115,18 +115,18 @@
             gap: 0.6rem;
             margin-top: 0.3rem;
             padding-top: 1.2rem;
-            border-top: 1px solid rgba(186, 213, 239, 0.2);
+            border-top: 1px solid rgba(62, 99, 255, 0.3);
         }
 
         .btn {
-            background: rgba(2, 4, 12, 0.8); color: #BAD5EF;
-            border: 1px solid rgba(186, 213, 239, 0.3);
+            background: rgba(6, 12, 49, 0.8); color: #ffffff;
+            border: 1px solid rgba(62, 99, 255, 0.5);
             padding: 0.7rem 0.5rem; cursor: pointer;
             font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
             transition: all 0.2s; text-align: center;
         }
 
-        .btn:hover { background: rgba(186, 213, 239, 0.2); color: #FFF; border-color: #FFF; }
+        .btn:hover { background: #3e63ff; color: #FFF; border-color: #FFF; }
         .btn.full { grid-column: 1 / -1; }
         .btn.recording { background: #4a0000; color: #ff4444; border-color: #ff4444; animation: blink 1s infinite; }
 
@@ -141,7 +141,7 @@
         <div class="command-center" id="commandCenter">
             
             <div class="header">
-                <span class="app-title">VOSTOK WEATHER</span>
+                <span class="app-title">BRAND SYSTEM</span>
                 <span class="live-indicator"><span class="dot"></span> LIVE</span>
             </div>
             
@@ -152,8 +152,8 @@
                 </div>
                 <div class="labels">
                     <div class="lbl-title">TEMPERATURE</div>
-                    <div class="lbl-desc">ANTARCTIC STREAM</div>
-                    <div class="lbl-telemetry" id="windTelemetry">WIND: 14.2 KTS [STREAMING]</div>
+                    <div class="lbl-desc">COLOR WINDOW MAP</div>
+                    <div class="lbl-telemetry" id="windTelemetry">WIND: 14.2 KTS [VAR]</div>
                 </div>
             </div>
 
@@ -219,12 +219,9 @@
         let width, height;
         let time = 0;
         let gridSpacing = 18; 
-
-        // Coordenadas acumulativas para el viento aleatorio
         let windOffsetX = 0;
         let windOffsetY = 0;
 
-        // Auto-Fade Logic
         let idleTimer;
         function resetIdleTimer() {
             commandCenter.style.opacity = '1';
@@ -238,11 +235,22 @@
         window.addEventListener('touchstart', resetIdleTimer);
         resetIdleTimer(); 
 
-        // 13-Tone Deep Palette
+        // === BRAND GRADIENT PALETTE EXACTA ===
+        // 0-6 es la zona Dark (-89C), 6-12 es la zona Light (0C)
         const hexPalette = [
-            '#000000', '#010206', '#02040D', '#030614', '#060B24', 
-            '#0A153A', '#101D5C', '#162A82', '#1C37A3', '#2244C4', 
-            '#7ba4cf', '#BAD5EF', '#ffffff' 
+            '#060c31', // 0: Dark Base
+            '#0d1952', // 1
+            '#162876', // 2
+            '#213a9c', // 3
+            '#2d4dc4', // 4
+            '#3a5eeb', // 5
+            '#3e63ff', // 6: Electric Brand Blue (Centro exacto)
+            '#5e81ff', // 7
+            '#7da0ff', // 8
+            '#9dbfff', // 9
+            '#bcddff', // 10
+            '#dcf1ff', // 11
+            '#ffffff'  // 12: Pure White
         ];
         
         const rgbPalette = hexPalette.map(hex => {
@@ -250,10 +258,10 @@
             return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
         });
 
-        function getInterpolatedColor(intensity, alpha = 1) {
-            let t = Math.max(0, Math.min(0.999, intensity));
-            let scaledT = t * (rgbPalette.length - 1);
+        // Modificada para recibir directamente la escala mapeada según la temperatura
+        function getMappedColor(scaledT, alpha = 1) {
             let index = Math.floor(scaledT);
+            index = Math.max(0, Math.min(rgbPalette.length - 2, index)); // Safety bounds
             let frac = scaledT - index;
             
             let r = Math.round(rgbPalette[index].r + (rgbPalette[index + 1].r - rgbPalette[index].r) * frac);
@@ -271,7 +279,7 @@
             const buffer = new Uint32Array(imgData.data.buffer);
             for (let i = 0; i < buffer.length; i++) {
                 let shade = Math.random() * 255;
-                buffer[i] = (14 << 24) | (shade << 16) | (shade << 8) | shade; 
+                buffer[i] = (15 << 24) | (shade << 16) | (shade << 8) | shade; 
             }
             noiseCtx.putImageData(imgData, 0, 0);
         }
@@ -307,28 +315,29 @@
 
         updateUI();
 
-        // === MOTOR TOPOGRÁFICO DE VIENTOS POLARES DINÁMICOS ===
+        // === MOTOR BRAND DYNAMICS ===
         function draw() {
-            ctx.fillStyle = '#000000'; 
+            ctx.fillStyle = '#060c31'; // Base dark
             ctx.fillRect(0, 0, width, height);
 
             let tempValue = Math.abs(parseInt(tempSlider.value)); 
             let coldFactor = tempValue / 89; 
 
-            // Leer sliders nuevos
-            let waveScale = parseInt(scaleSlider.value) / 10; // Convierte rango 10-60 a 1.0-6.0
-            let chaosFactor = parseInt(chaosSlider.value) / 100; // Convierte rango 0-100 a 0.0-1.0
+            // CÁLCULO DE LA VENTANA DE COLOR (COLOR WINDOWING)
+            // coldFactor 0 (Hot) -> Window spans from index 6 (#3e63ff) to 12 (#ffffff)
+            // coldFactor 1 (Cold) -> Window spans from index 0 (#060c31) to 6 (#3e63ff)
+            let windowSpan = 6; 
+            let windowStart = (1 - coldFactor) * 6;
 
-            // 1. SIMULACIÓN DE VIENTO REAL / CAMPO CAÓTICO ALEATORIO
-            // Usamos sines desfasados con números primos para simular ráfagas ruidosas ricas e impredecibles
+            let waveScale = parseInt(scaleSlider.value) / 10;
+            let chaosFactor = parseInt(chaosSlider.value) / 100;
+
             let windDriftX = (Math.sin(time * 0.9) * 0.4 + Math.cos(time * 1.7) * 0.3) * chaosFactor;
             let windDriftY = (Math.cos(time * 1.1) * 0.4 + Math.sin(time * 1.3) * 0.3) * chaosFactor;
             
-            // Añadir un componente base constante que frena o acelera según el frío
             windOffsetX += 0.005 + windDriftX * 0.02;
             windOffsetY += 0.003 + windDriftY * 0.02;
 
-            // Actualizar el string de telemetría del HUD ficticio basado en el caos actual
             if (Math.random() < 0.05) {
                 let simulatedKnots = (10 + (chaosFactor * 45) + Math.sin(time) * 4).toFixed(1);
                 windTelemetry.textContent = `WIND: ${simulatedKnots} KTS [VAR]`;
@@ -339,7 +348,6 @@
             for (let x = -gridSpacing; x < width + gridSpacing; x += gridSpacing) {
                 for (let y = -gridSpacing; y < height + gridSpacing; y += gridSpacing) {
                     
-                    // Inyectamos los offsets del viento aleatorio en el mapa topográfico
                     let nX = x * 0.0015 + windOffsetX;
                     let nY = y * 0.0015 + windOffsetY;
 
@@ -348,25 +356,23 @@
                     let wave3 = Math.sin((nX + nY) * 0.8 + time * 0.4);
                     
                     let flow = wave1 + wave2 + wave3; 
-
-                    // El secreto del look Muji: 'waveScale' controla la frecuencia/densidad de las líneas
                     let topographicBands = Math.sin(flow * waveScale * 1.8); 
                     
-                    // Mapeo simétrico de intensidad (0 a 1)
+                    // rawIntensity siempre va de 0 a 1
                     let rawIntensity = (topographicBands + 1) / 2;
                     
-                    // 3. Ajuste adaptativo de temperatura gélida
-                    let energyBias = 0.20 - (coldFactor * 0.45); 
-                    let intensity = Math.max(0.0, Math.min(0.999, rawIntensity + energyBias));
+                    // MAPEO RESTRINGIDO AL BRAND
+                    // Empujamos el rawIntensity a través de la ventana calculada arriba
+                    let scaledT = windowStart + (rawIntensity * windowSpan);
 
                     let maxRadius = gridSpacing * 1.45; 
-                    let radius = intensity * maxRadius;
+                    let radius = rawIntensity * maxRadius; // El tamaño de la célula sigue respirando
 
                     if (radius < 1) continue;
 
                     ctx.beginPath();
                     ctx.arc(x, y, radius, 0, Math.PI * 2);
-                    ctx.fillStyle = getInterpolatedColor(intensity, 0.95);
+                    ctx.fillStyle = getMappedColor(scaledT, 0.95);
                     ctx.fill();
                 }
             }
@@ -375,13 +381,11 @@
             ctx.drawImage(noiseCanvas, 0, 0);
             ctx.globalCompositeOperation = 'source-over';
 
-            // El tiempo base corre fluido
             time += 0.008 + (coldFactor * 0.004); 
             requestAnimationFrame(draw);
         }
         draw();
 
-        // === SISTEMA DE EXPORTACIÓN ===
         function exportImage(ratioStr) {
             const tempCanvas = document.createElement('canvas'); const tCtx = tempCanvas.getContext('2d');
             let realW = window.innerWidth, realH = window.innerHeight;
@@ -392,7 +396,7 @@
             tempCanvas.width = cropWidth; tempCanvas.height = cropHeight;
             let sX = (realW - cropWidth) / 2, sY = (realH - cropHeight) / 2;
             tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH);
-            const link = document.createElement('a'); link.download = `vostok_weather_${ratioStr.replace(':','x')}.png`;
+            const link = document.createElement('a'); link.download = `brand_weather_${ratioStr.replace(':','x')}.png`;
             link.href = tempCanvas.toDataURL('image/png', 1.0); link.click();
         }
 
@@ -404,7 +408,7 @@
             mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob);
-                const link = document.createElement('a'); link.download = `vostok_weather_render.webm`; 
+                const link = document.createElement('a'); link.download = `brand_weather_render.webm`; 
                 link.href = url; link.click(); URL.revokeObjectURL(url); 
                 btn.classList.remove('recording'); btn.textContent = `DOWNLOAD VIDEO`;
             };
