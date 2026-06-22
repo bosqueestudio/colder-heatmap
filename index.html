@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vostok Weather | Brand Gradient System</title>
+    <title>Vostok Brand System | Grey Goose Dynamics</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         /* === RESET & BASE === */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: #060c31; /* Fondo base alineado al brand */
+            background-color: #060c31; 
             color: #BAD5EF;
             font-family: 'Space Mono', monospace;
             overflow: hidden;
@@ -50,10 +50,10 @@
         .command-center {
             pointer-events: auto;
             background: rgba(2, 4, 12, 0.88); 
-            border: 1px solid rgba(62, 99, 255, 0.4); /* Borde alineado al brand blue */
+            border: 1px solid rgba(62, 99, 255, 0.4); 
             border-left: 4px solid #3e63ff;
             padding: 1.5rem;
-            width: 320px;
+            width: 330px;
             display: flex;
             flex-direction: column;
             gap: 1.2rem;
@@ -95,7 +95,37 @@
         .lbl-desc { color: rgba(186, 213, 239, 0.8); font-size: 10px; }
         .lbl-telemetry { color: #3e63ff; font-size: 9px; font-family: monospace; font-weight: bold; }
 
-        .controls { display: flex; flex-direction: column; gap: 1rem; }
+        /* === MORPHOLOGY SELECTOR (NEW) === */
+        .selector-wrapper { display: flex; flex-direction: column; gap: 4px; }
+        .lbl-sub { font-size: 9px; color: #dcf1ff; letter-spacing: 0.5px; }
+        
+        .state-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            background: rgba(255,255,255,0.03);
+            padding: 3px;
+            border: 1px solid rgba(62, 99, 255, 0.2);
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: rgba(186, 213, 239, 0.5);
+            border: none;
+            padding: 0.6rem 0.1rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .tab-btn.active { background: #3e63ff; color: #ffffff; }
+        .tab-btn:hover:not(.active) { color: #ffffff; background: rgba(255,255,255,0.08); }
+
+        /* SLIDERS */
+        .controls { display: flex; flex-direction: column; gap: 0.9rem; margin-top: 4px;}
         .slider-wrapper { display: flex; flex-direction: column; gap: 0.4rem; }
         .slider-header { display: flex; justify-content: space-between; font-size: 10px; color: #dcf1ff; }
         
@@ -154,6 +184,16 @@
                     <div class="lbl-title">TEMPERATURE</div>
                     <div class="lbl-desc">COLOR WINDOW MAP</div>
                     <div class="lbl-telemetry" id="windTelemetry">WIND: 14.2 KTS [VAR]</div>
+                </div>
+            </div>
+
+            <!-- SELECTOR DE MORFOLOGÍA -->
+            <div class="selector-wrapper">
+                <span class="lbl-sub">ATMOSPHERIC STATE</span>
+                <div class="state-tabs">
+                    <button class="tab-btn active" onclick="setMorphology('CELLS', this)">POLAR CELLS</button>
+                    <button class="tab-btn" onclick="setMorphology('ISOBARS', this)">ISOBAR DRIFT</button>
+                    <button class="tab-btn" onclick="setMorphology('MATRIX', this)">GLACIAL MATRIX</button>
                 </div>
             </div>
 
@@ -221,6 +261,7 @@
         let gridSpacing = 18; 
         let windOffsetX = 0;
         let windOffsetY = 0;
+        let currentMorphology = 'CELLS'; // Default state
 
         let idleTimer;
         function resetIdleTimer() {
@@ -235,22 +276,18 @@
         window.addEventListener('touchstart', resetIdleTimer);
         resetIdleTimer(); 
 
-        // === BRAND GRADIENT PALETTE EXACTA ===
-        // 0-6 es la zona Dark (-89C), 6-12 es la zona Light (0C)
+        // Cambiar Morfología
+        function setMorphology(type, elem) {
+            currentMorphology = type;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            elem.classList.add('active');
+        }
+
+        // Grey Goose Brand Palette
         const hexPalette = [
-            '#060c31', // 0: Dark Base
-            '#0d1952', // 1
-            '#162876', // 2
-            '#213a9c', // 3
-            '#2d4dc4', // 4
-            '#3a5eeb', // 5
-            '#3e63ff', // 6: Electric Brand Blue (Centro exacto)
-            '#5e81ff', // 7
-            '#7da0ff', // 8
-            '#9dbfff', // 9
-            '#bcddff', // 10
-            '#dcf1ff', // 11
-            '#ffffff'  // 12: Pure White
+            '#060c31', '#0d1952', '#162876', '#213a9c', '#2d4dc4', '#3a5eeb', 
+            '#3e63ff', // Index 6: Brand Blue
+            '#5e81ff', '#7da0ff', '#9dbfff', '#bcddff', '#dcf1ff', '#ffffff'
         ];
         
         const rgbPalette = hexPalette.map(hex => {
@@ -258,10 +295,9 @@
             return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
         });
 
-        // Modificada para recibir directamente la escala mapeada según la temperatura
         function getMappedColor(scaledT, alpha = 1) {
             let index = Math.floor(scaledT);
-            index = Math.max(0, Math.min(rgbPalette.length - 2, index)); // Safety bounds
+            index = Math.max(0, Math.min(rgbPalette.length - 2, index)); 
             let frac = scaledT - index;
             
             let r = Math.round(rgbPalette[index].r + (rgbPalette[index + 1].r - rgbPalette[index].r) * frac);
@@ -299,33 +335,26 @@
             ringContainer.style.setProperty('--fill-pct', `${pct}%`);
         }
         tempSlider.addEventListener('input', updateUI);
-        
         sizeSlider.addEventListener('input', (e) => {
             gridSpacing = parseInt(e.target.value);
             sizeValueDisplay.textContent = `${gridSpacing} PX`;
         });
-
         scaleSlider.addEventListener('input', (e) => {
             scaleValueDisplay.textContent = `${(parseInt(e.target.value)/10).toFixed(1)}X`;
         });
-
         chaosSlider.addEventListener('input', (e) => {
             chaosValueDisplay.textContent = `${e.target.value}%`;
         });
-
         updateUI();
 
-        // === MOTOR BRAND DYNAMICS ===
+        // === MOTOR MULTI-MORFOLOGÍA ===
         function draw() {
-            ctx.fillStyle = '#060c31'; // Base dark
+            ctx.fillStyle = '#060c31'; 
             ctx.fillRect(0, 0, width, height);
 
             let tempValue = Math.abs(parseInt(tempSlider.value)); 
             let coldFactor = tempValue / 89; 
 
-            // CÁLCULO DE LA VENTANA DE COLOR (COLOR WINDOWING)
-            // coldFactor 0 (Hot) -> Window spans from index 6 (#3e63ff) to 12 (#ffffff)
-            // coldFactor 1 (Cold) -> Window spans from index 0 (#060c31) to 6 (#3e63ff)
             let windowSpan = 6; 
             let windowStart = (1 - coldFactor) * 6;
 
@@ -358,22 +387,36 @@
                     let flow = wave1 + wave2 + wave3; 
                     let topographicBands = Math.sin(flow * waveScale * 1.8); 
                     
-                    // rawIntensity siempre va de 0 a 1
                     let rawIntensity = (topographicBands + 1) / 2;
-                    
-                    // MAPEO RESTRINGIDO AL BRAND
-                    // Empujamos el rawIntensity a través de la ventana calculada arriba
                     let scaledT = windowStart + (rawIntensity * windowSpan);
 
-                    let maxRadius = gridSpacing * 1.45; 
-                    let radius = rawIntensity * maxRadius; // El tamaño de la célula sigue respirando
+                    if (rawIntensity < 0.02) continue; // Optimización
 
-                    if (radius < 1) continue;
+                    let mappedColor = getMappedColor(scaledT, 0.95);
+                    ctx.fillStyle = mappedColor;
 
-                    ctx.beginPath();
-                    ctx.arc(x, y, radius, 0, Math.PI * 2);
-                    ctx.fillStyle = getMappedColor(scaledT, 0.95);
-                    ctx.fill();
+                    // === RENDER SWITCH BASADO EN EL ESTADO ATMOSFÉRICO ===
+                    if (currentMorphology === 'CELLS') {
+                        let radius = rawIntensity * (gridSpacing * 1.45);
+                        ctx.beginPath();
+                        ctx.arc(x, y, radius, 0, Math.PI * 2);
+                        ctx.fill();
+                    } 
+                    else if (currentMorphology === 'ISOBARS') {
+                        // Dibuja vectores estirados y rotados dinámicamente por la corriente
+                        ctx.save();
+                        ctx.translate(x, y);
+                        ctx.rotate(flow * 1.2); 
+                        let lineLen = gridSpacing * 1.8;
+                        let lineThick = rawIntensity * (gridSpacing * 0.6);
+                        ctx.fillRect(-lineLen/2, -lineThick/2, lineLen, lineThick);
+                        ctx.restore();
+                    } 
+                    else if (currentMorphology === 'MATRIX') {
+                        // Dibuja bloques digitales que se solapan
+                        let boxSize = rawIntensity * (gridSpacing * 1.4);
+                        ctx.fillRect(x - boxSize/2, y - boxSize/2, boxSize, boxSize);
+                    }
                 }
             }
 
