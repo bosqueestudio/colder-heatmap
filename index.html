@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -98,4 +98,360 @@
         .mode-toggle.save-mode { background: #e74c3c; color: #fff; border-color: #e74c3c; animation: blink 1s infinite;}
         
         .preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
-        .p-slot { background: rgba(
+        .p-slot { background: rgba(0,0,0,0.5); color: #BAD5EF; border: 1px solid rgba(80, 227, 194, 0.3); padding: 4px 2px; font-size: 7.5px; font-family: monospace; cursor: pointer; text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
+        .p-slot:hover { background: #50e3c2; color: #000; }
+
+        /* SLIDERS */
+        .controls { display: flex; flex-direction: column; gap: 0.6rem;}
+        .slider-wrapper { display: flex; flex-direction: column; gap: 0.2rem; }
+        .slider-header { display: flex; justify-content: space-between; font-size: 9px; color: #dcf1ff; }
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 2px; background: rgba(62, 99, 255, 0.3); outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 8px; height: 14px; background: #ffffff; cursor: pointer; border-radius: 0; }
+        input[type=range]::-webkit-slider-thumb:hover { background: #3e63ff; }
+
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; border-top: 1px solid rgba(62, 99, 255, 0.3); padding-top: 0.6rem;}
+        .btn { background: rgba(6, 12, 49, 0.8); color: #ffffff; border: 1px solid rgba(62, 99, 255, 0.5); padding: 0.5rem 0.5rem; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; transition: all 0.2s; text-align: center; }
+        .btn:hover { background: #3e63ff; color: #FFF; border-color: #FFF; }
+        .btn.full { grid-column: 1 / -1; }
+    </style>
+</head>
+<body>
+
+    <canvas id="fluidCanvas"></canvas>
+    <div class="scanlines"></div>
+    
+    <div class="ui-layer">
+        <div class="command-center" id="commandCenter">
+            
+            <div class="header">
+                <span class="app-title">STUDIO ENGINE v12</span>
+                <span class="live-indicator"><span class="dot"></span> GLOBAL GRAVITY</span>
+            </div>
+            
+            <div class="readout">
+                <div class="gauge" id="ringContainer" style="--fill-pct: 50%;">
+                    <div class="gauge-fill"></div>
+                    <div class="temp-val" id="tempDisplay">-45°</div>
+                </div>
+                <div class="labels">
+                    <div class="lbl-title">CORE TEMPERATURE</div>
+                    <div class="lbl-desc">RAMP: <span id="palLabel">GREY GOOSE [OFFICIAL]</span></div>
+                </div>
+            </div>
+
+            <div class="selector-wrapper">
+                <span class="lbl-sub"><span>KINETIC FLOW LAW</span><span style="color:#50e3c2;">[ANIMATION]</span></span>
+                <div class="grid-2">
+                    <button class="tab-btn active" onclick="setKinetic('STRATA', this)">STRATA [WAVES]</button>
+                    <button class="tab-btn" onclick="setKinetic('VORTEX', this)">CORIOLIS [VORTEX]</button>
+                </div>
+            </div>
+
+            <div class="selector-wrapper">
+                <span class="lbl-sub">ATMOSPHERIC STATE</span>
+                <div class="grid-3">
+                    <button class="tab-btn active" onclick="setMorphology('CELLS', this)">POLAR CELLS</button>
+                    <button class="tab-btn" onclick="setMorphology('ISOBARS', this)">ISOBAR DRIFT</button>
+                    <button class="tab-btn" onclick="setMorphology('MATRIX', this)">GLACIAL MATRIX</button>
+                </div>
+            </div>
+
+            <div class="selector-wrapper">
+                <span class="lbl-sub">CHROMATIC 6-HEX ENGINE</span>
+                <div class="grid-2">
+                    <button class="tab-btn active" onclick="setPaletteMode('BRAND', this)">GREY GOOSE</button>
+                    <button class="tab-btn" onclick="setPaletteMode('CUSTOM', this)">6-HEX CUSTOM</button>
+                </div>
+                <div class="hex-grid" id="customColorBox" style="display: none;">
+                    <div class="hex-slot"><input type="color" id="col1" value="#060C31"><input type="text" id="hex1" value="#060C31" maxlength="7"></div>
+                    <div class="hex-slot"><input type="color" id="col2" value="#162876"><input type="text" id="hex2" value="#162876" maxlength="7"></div>
+                    <div class="hex-slot"><input type="color" id="col3" value="#2D4DC4"><input type="text" id="hex3" value="#2D4DC4" maxlength="7"></div>
+                    <div class="hex-slot"><input type="color" id="col4" value="#3E63FF"><input type="text" id="hex4" value="#3E63FF" maxlength="7"></div>
+                    <div class="hex-slot"><input type="color" id="col5" value="#9DBFFF"><input type="text" id="hex5" value="#9DBFFF" maxlength="7"></div>
+                    <div class="hex-slot"><input type="color" id="col6" value="#FFFFFF"><input type="text" id="hex6" value="#FFFFFF" maxlength="7"></div>
+                </div>
+            </div>
+
+            <div class="preset-container">
+                <div class="preset-header">
+                    <span>MEMORY BANK</span>
+                    <button class="mode-toggle" id="presetModeBtn" onclick="togglePresetMode()">MODE: LOAD</button>
+                </div>
+                <div class="preset-grid">
+                    <button class="p-slot" id="btnP1" onclick="handlePreset(1)">P1: BRAND</button>
+                    <button class="p-slot" id="btnP2" onclick="handlePreset(2)">P2: VORTEX</button>
+                    <button class="p-slot" id="btnP3" onclick="handlePreset(3)">P3: ---</button>
+                    <button class="p-slot" id="btnP4" onclick="handlePreset(4)">P4: ---</button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="slider-wrapper"><div class="slider-header"><span>CALIBRATE TEMP</span> <span id="tempValSub">-45°C</span></div><input type="range" id="tempSlider" min="-89" max="0" value="-45"></div>
+                <div class="slider-wrapper"><div class="slider-header"><span>STORM DENSITY</span> <span id="sizeValueDisplay">18 PX</span></div><input type="range" id="sizeSlider" min="8" max="35" value="18"></div>
+                <div class="slider-wrapper"><div class="slider-header"><span>WAVE SCALE</span> <span id="scaleValueDisplay">2.2X</span></div><input type="range" id="scaleSlider" min="10" max="60" value="22"></div>
+                <div class="slider-wrapper"><div class="slider-header"><span>TURBULENCE CHAOS</span> <span id="chaosValueDisplay">50%</span></div><input type="range" id="chaosSlider" min="0" max="100" value="50"></div>
+                <div class="slider-wrapper"><div class="slider-header"><span style="color:#50e3c2;">KINETIC VELOCITY</span> <span id="speedValueDisplay" style="color:#50e3c2;">50%</span></div><input type="range" id="speedSlider" min="1" max="100" value="50"></div>
+            </div>
+
+            <div class="actions">
+                <button class="btn" onclick="exportImage('16:9')">IMAGE 16:9</button>
+                <button class="btn" onclick="exportImage('4:5')">IMAGE 4:5</button>
+                <button class="btn full" onclick="exportVideo()" id="btnVideo">DOWNLOAD VIDEO</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('fluidCanvas'); const ctx = canvas.getContext('2d');
+        const tempSlider = document.getElementById('tempSlider'); const tempDisplay = document.getElementById('tempDisplay');
+        const tempValSub = document.getElementById('tempValSub'); const ringContainer = document.getElementById('ringContainer');
+        const sizeSlider = document.getElementById('sizeSlider'); const sizeValueDisplay = document.getElementById('sizeValueDisplay');
+        const scaleSlider = document.getElementById('scaleSlider'); const scaleValueDisplay = document.getElementById('scaleValueDisplay');
+        const chaosSlider = document.getElementById('chaosSlider'); const chaosValueDisplay = document.getElementById('chaosValueDisplay');
+        const speedSlider = document.getElementById('speedSlider'); const speedValueDisplay = document.getElementById('speedValueDisplay');
+        const commandCenter = document.getElementById('commandCenter'); const palLabel = document.getElementById('palLabel');
+        
+        let width, height; let time = 0; let gridSpacing = 18; 
+        let windOffsetX = 0; let windOffsetY = 0;
+        let currentMorphology = 'CELLS'; 
+        let paletteMode = 'BRAND';
+        let kineticEngine = 'STRATA';
+        let presetAction = 'LOAD'; 
+
+        // === GRAVITY CORE POSITION ===
+        let focusX = -1000, focusY = -1000;
+        let targetFocusX = -1000, targetFocusY = -1000;
+
+        window.addEventListener('mousemove', (e) => {
+            targetFocusX = e.clientX;
+            targetFocusY = e.clientY;
+            resetIdleTimer();
+        });
+
+        let idleTimer;
+        function resetIdleTimer() {
+            commandCenter.style.opacity = '1'; clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => { commandCenter.style.opacity = '0'; }, 2500); 
+        }
+        window.addEventListener('mousedown', resetIdleTimer); resetIdleTimer(); 
+
+        function setKinetic(type, elem) {
+            kineticEngine = type;
+            elem.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); elem.classList.add('active');
+        }
+
+        function setMorphology(type, elem) {
+            currentMorphology = type;
+            elem.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); elem.classList.add('active');
+        }
+
+        function setPaletteMode(mode, elem) {
+            paletteMode = mode;
+            elem.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); elem.classList.add('active');
+            document.getElementById('customColorBox').style.display = mode === 'CUSTOM' ? 'grid' : 'none';
+            palLabel.textContent = mode === 'BRAND' ? 'GREY GOOSE [OFFICIAL]' : '6-HEX [CUSTOM]';
+            rebuildActivePalette();
+        }
+
+        for(let i=1; i<=6; i++) {
+            let hexInp = document.getElementById('hex'+i); let colInp = document.getElementById('col'+i);
+            hexInp.addEventListener('input', (e) => { let val = e.target.value; if(/^#[0-9A-F]{6}$/i.test(val)) { colInp.value = val; rebuildActivePalette(); }});
+            colInp.addEventListener('input', (e) => { hexInp.value = e.target.value.toUpperCase(); rebuildActivePalette(); });
+        }
+
+        const brandHexPalette = ['#060c31', '#0d1952', '#162876', '#213a9c', '#2d4dc4', '#3a5eeb', '#3e63ff', '#5e81ff', '#7da0ff', '#9dbfff', '#bcddff', '#dcf1ff', '#ffffff'];
+        const brandRgbPalette = brandHexPalette.map(h => ({ r: parseInt(h.slice(1,3),16), g: parseInt(h.slice(3,5),16), b: parseInt(h.slice(5,7),16) }));
+        let activeRgbPalette = [...brandRgbPalette];
+
+        function rebuildActivePalette() {
+            if (paletteMode === 'BRAND') { activeRgbPalette = [...brandRgbPalette]; document.body.style.backgroundColor = '#060c31'; return; }
+            const hexToRgb = h => {
+                let clean = h.replace('#', ''); if(clean.length !== 6) clean = '000000';
+                return { r: parseInt(clean.slice(0,2),16), g: parseInt(clean.slice(2,4),16), b: parseInt(clean.slice(4,6),16) };
+            };
+            let baseColors = []; for(let i=1; i<=6; i++) { baseColors.push(hexToRgb(document.getElementById('hex'+i).value)); }
+            let newPal = [];
+            for(let i=0; i<13; i++) {
+                let scaledT = (i / 12) * 5; let idx = Math.floor(scaledT); let frac = scaledT - idx;
+                if(idx >= 5) { newPal.push(baseColors[5]); } else {
+                    let c1 = baseColors[idx], c2 = baseColors[idx+1];
+                    newPal.push({ r: Math.round(c1.r + (c2.r - c1.r)*frac), g: Math.round(c1.g + (c2.g - c1.g)*frac), b: Math.round(c1.b + (c2.b - c1.b)*frac) });
+                }
+            }
+            activeRgbPalette = newPal; document.body.style.backgroundColor = document.getElementById('hex1').value;
+        }
+
+        function getMappedColor(scaledT, alpha = 1) {
+            let index = Math.max(0, Math.min(activeRgbPalette.length - 2, Math.floor(scaledT))); 
+            let frac = scaledT - index; let c1 = activeRgbPalette[index], c2 = activeRgbPalette[index + 1];
+            return `rgba(${Math.round(c1.r + (c2.r - c1.r) * frac)}, ${Math.round(c1.g + (c2.g - c1.g) * frac)}, ${Math.round(c1.b + (c2.b - c1.b) * frac)}, ${alpha})`;
+        }
+
+        function togglePresetMode() {
+            const btn = document.getElementById('presetModeBtn');
+            if(presetAction === 'LOAD') { presetAction = 'SAVE'; btn.textContent = 'MODE: OVERWRITE'; btn.classList.add('save-mode'); } 
+            else { presetAction = 'LOAD'; btn.textContent = 'MODE: LOAD'; btn.classList.remove('save-mode'); }
+        }
+
+        function handlePreset(slot) {
+            const slotKey = 'vostok_v11_' + slot; const btnElem = document.getElementById('btnP' + slot);
+            if(presetAction === 'SAVE') {
+                let customName = prompt("NAME THIS PRESET (MAX 8 CHARS):", "P" + slot + "_CSTM"); if(!customName) return;
+                customName = customName.toUpperCase().slice(0, 8);
+                const presetData = {
+                    name: customName, temp: tempSlider.value, size: sizeSlider.value, scale: scaleSlider.value, chaos: chaosSlider.value, speed: speedSlider.value, morph: currentMorphology, palMode: paletteMode, kinetic: kineticEngine, h1: document.getElementById('hex1').value, h2: document.getElementById('hex2').value, h3: document.getElementById('hex3').value, h4: document.getElementById('hex4').value, h5: document.getElementById('hex5').value, h6: document.getElementById('hex6').value
+                };
+                localStorage.setItem(slotKey, JSON.stringify(presetData)); btnElem.textContent = customName; togglePresetMode(); 
+            } else {
+                let data = localStorage.getItem(slotKey); if(!data) { alert("MEMORY SLOT " + slot + " IS EMPTY"); return; }
+                try {
+                    data = JSON.parse(data); tempSlider.value = data.temp; sizeSlider.value = data.size; scaleSlider.value = data.scale; chaosSlider.value = data.chaos; if(data.speed) speedSlider.value = data.speed;
+                    document.getElementById('col1').value = data.h1; document.getElementById('hex1').value = data.h1; document.getElementById('col2').value = data.h2; document.getElementById('hex2').value = data.h2; document.getElementById('col3').value = data.h3; document.getElementById('hex3').value = data.h3; document.getElementById('col4').value = data.h4; document.getElementById('hex4').value = data.h4; document.getElementById('col5').value = data.h5; document.getElementById('hex5').value = data.h5; document.getElementById('col6').value = data.h6; document.getElementById('hex6').value = data.h6;
+                    document.querySelectorAll('.selector-wrapper .tab-btn').forEach(b => {
+                        if(b.textContent.includes(data.kinetic) || b.textContent.includes(data.morph) || (data.palMode === 'BRAND' && b.textContent.includes('GREY GOOSE')) || (data.palMode === 'CUSTOM' && b.textContent.includes('6-HEX'))) { b.click(); }
+                    });
+                    updateUI(); rebuildActivePalette();
+                } catch(e) { console.error(e); }
+            }
+        }
+
+        function bootPresets() { for(let i=1; i<=4; i++) { let d = localStorage.getItem('vostok_v11_' + i); if(d) { try { document.getElementById('btnP'+i).textContent = JSON.parse(d).name; }catch(e){} } } }
+
+        const noiseCanvas = document.createElement('canvas'); const noiseCtx = noiseCanvas.getContext('2d');
+        function generateNoise() {
+            noiseCanvas.width = width; noiseCanvas.height = height; const imgData = noiseCtx.createImageData(width, height);
+            const buffer = new Uint32Array(imgData.data.buffer);
+            for (let i = 0; i < buffer.length; i++) { let shade = Math.random() * 255; buffer[i] = (15 << 24) | (shade << 16) | (shade << 8) | shade; }
+            noiseCtx.putImageData(imgData, 0, 0);
+        }
+
+        function resize() { 
+            width = window.innerWidth; height = window.innerHeight; 
+            canvas.width = width; canvas.height = height; 
+            // Inicializar el centroide en el medio de la pantalla
+            if(focusX === -1000) { focusX = width/2; focusY = height/2; targetFocusX = width/2; targetFocusY = height/2; }
+            generateNoise(); 
+        }
+        window.addEventListener('resize', resize); resize();
+
+        function updateUI() {
+            let temp = parseInt(tempSlider.value); tempDisplay.textContent = `${temp}°`; tempValSub.textContent = `${temp}°C`;
+            ringContainer.style.setProperty('--fill-pct', `${((temp + 89) / 89) * 100}%`);
+            gridSpacing = parseInt(sizeSlider.value); sizeValueDisplay.textContent = `${gridSpacing} PX`;
+            scaleValueDisplay.textContent = `${(parseInt(scaleSlider.value)/10).toFixed(1)}X`;
+            chaosValueDisplay.textContent = `${chaosSlider.value}%`; speedValueDisplay.textContent = `${speedSlider.value}%`;
+        }
+        
+        tempSlider.addEventListener('input', updateUI); sizeSlider.addEventListener('input', updateUI); 
+        scaleSlider.addEventListener('input', updateUI); chaosSlider.addEventListener('input', updateUI); speedSlider.addEventListener('input', updateUI);
+        bootPresets(); updateUI();
+
+        // === GLOBAL GRAVITY DISPATCHER ===
+        function draw() {
+            ctx.fillStyle = paletteMode === 'BRAND' ? '#060c31' : document.getElementById('hex1').value;
+            ctx.fillRect(0, 0, width, height);
+
+            // Suavizado del centro de gravedad hacia el mouse
+            focusX += (targetFocusX - focusX) * 0.05;
+            focusY += (targetFocusY - focusY) * 0.05;
+
+            let coldFactor = Math.abs(parseInt(tempSlider.value)) / 89; 
+            let windowStart = (1 - coldFactor) * 6;
+            let waveScale = parseInt(scaleSlider.value) / 10; 
+            let chaosFactor = parseInt(chaosSlider.value) / 100;
+            let speedMultiplier = parseInt(speedSlider.value) / 50; 
+
+            // Turbulencia natural
+            let windDriftX = (Math.sin(time * 0.9) * 0.4 + Math.cos(time * 1.7) * 0.3) * chaosFactor;
+            let windDriftY = (Math.cos(time * 1.1) * 0.4 + Math.sin(time * 1.3) * 0.3) * chaosFactor;
+            
+            // EL SECRETO GRAVITACIONAL: Toda la cuadrícula se desliza globalmente hacia el mouse
+            let windPullX = (focusX - width/2) * 0.00015;
+            let windPullY = (focusY - height/2) * 0.00015;
+
+            windOffsetX += (windDriftX * 0.02 + windPullX) * speedMultiplier; 
+            windOffsetY += (windDriftY * 0.02 + windPullY) * speedMultiplier;
+
+            ctx.globalCompositeOperation = 'source-over';
+
+            for (let x = -gridSpacing; x < width + gridSpacing; x += gridSpacing) {
+                for (let y = -gridSpacing; y < height + gridSpacing; y += gridSpacing) {
+                    
+                    let rawIntensity = 0;
+
+                    if (kineticEngine === 'STRATA') {
+                        let nX = x * 0.0015 + windOffsetX, nY = y * 0.0015 + windOffsetY;
+                        let flow = Math.sin(nX * 1.2 + time * 0.3) + Math.cos(nY * 1.4 - time * 0.2) + Math.sin((nX + nY) * 0.8 + time * 0.4); 
+                        rawIntensity = (Math.sin(flow * waveScale * 1.8) + 1) / 2;
+                    } 
+                    else if (kineticEngine === 'VORTEX') {
+                        // Los atractores ya no giran en el centro de la pantalla, giran sobre el cursor
+                        let cX1 = focusX + Math.sin(time * 0.35) * (width * 0.18);
+                        let cY1 = focusY + Math.cos(time * 0.25) * (height * 0.22);
+                        let cX2 = focusX + Math.cos(time * 0.4) * (width * 0.18);
+                        let cY2 = focusY + Math.sin(time * 0.3) * (height * 0.22);
+
+                        let dx1 = (x - cX1) * 0.002, dy1 = (y - cY1) * 0.002;
+                        let dist1 = Math.sqrt(dx1*dx1 + dy1*dy1), angle1 = Math.atan2(dy1, dx1);
+
+                        let dx2 = (x - cX2) * 0.002, dy2 = (y - cY2) * 0.002;
+                        let dist2 = Math.sqrt(dx2*dx2 + dy2*dy2), angle2 = Math.atan2(dy2, dx2);
+
+                        let spiral1 = Math.sin(angle1 * 2.0 + dist1 * (waveScale * 1.5) - time * 0.8);
+                        let spiral2 = Math.cos(angle2 * 2.0 - dist2 * (waveScale * 1.5) + time * 0.6);
+                        let tide = Math.sin((x * 0.001 - y * 0.001) + windOffsetX) * chaosFactor;
+
+                        let vortexMath = (spiral1 + spiral2 + tide) / 2.2;
+                        rawIntensity = Math.max(0, Math.min(1, (vortexMath + 1) / 2));
+                    }
+
+                    if (rawIntensity < 0.02) continue; 
+                    
+                    ctx.fillStyle = getMappedColor(windowStart + (rawIntensity * 6), 0.95);
+
+                    if (currentMorphology === 'CELLS') {
+                        ctx.beginPath(); ctx.arc(x, y, rawIntensity * (gridSpacing * 1.45), 0, Math.PI * 2); ctx.fill();
+                    } else if (currentMorphology === 'ISOBARS') {
+                        ctx.save(); ctx.translate(x, y); ctx.rotate((rawIntensity * 4.0) + windOffsetX); 
+                        ctx.fillRect(-(gridSpacing * 1.8)/2, -(rawIntensity * (gridSpacing * 0.6))/2, gridSpacing * 1.8, rawIntensity * (gridSpacing * 0.6)); ctx.restore();
+                    } else if (currentMorphology === 'MATRIX') {
+                        let bs = rawIntensity * (gridSpacing * 1.4); ctx.fillRect(x - bs/2, y - bs/2, bs, bs);
+                    }
+                }
+            }
+
+            ctx.globalCompositeOperation = 'overlay'; ctx.drawImage(noiseCanvas, 0, 0); ctx.globalCompositeOperation = 'source-over';
+            
+            time += (0.007 + coldFactor * 0.004) * speedMultiplier; 
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        function exportImage(ratioStr) {
+            const tempCanvas = document.createElement('canvas'); const tCtx = tempCanvas.getContext('2d');
+            let realW = window.innerWidth, realH = window.innerHeight; let rW = ratioStr === '16:9' ? 16 : 4, rH = ratioStr === '16:9' ? 9 : 5;
+            let cropWidth = realW, cropHeight = (realW / rW) * rH; if (cropHeight > realH) { cropHeight = realH; cropWidth = (realH / rH) * rW; }
+            tempCanvas.width = cropWidth; tempCanvas.height = cropHeight; let sX = (realW - cropWidth) / 2, sY = (realH - cropHeight) / 2;
+            tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH); const link = document.createElement('a'); link.download = `vostok_gravity_${ratioStr.replace(':','x')}.png`; link.href = tempCanvas.toDataURL('image/png', 1.0); link.click();
+        }
+
+        function exportVideo() {
+            const btn = document.getElementById('btnVideo'); if (btn.classList.contains('recording')) return; 
+            btn.classList.add('recording'); btn.textContent = `RECORDING (10s)...`; recordedChunks = [];
+            
+            const stream = canvas.captureStream(60); 
+            let options = { videoBitsPerSecond: 50000000 };
+            
+            try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9', ...options }); } 
+            catch (e) { mediaRecorder = new MediaRecorder(stream, options); }
+            
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.download = `vostok_hq_gravity.webm`; link.href = url; link.click(); URL.revokeObjectURL(url); btn.classList.remove('recording'); btn.textContent = `DOWNLOAD VIDEO`;
+            }; 
+            mediaRecorder.start(); setTimeout(() => mediaRecorder.stop(), 10000); 
+        }
+    </script>
+</body>
+</html>
