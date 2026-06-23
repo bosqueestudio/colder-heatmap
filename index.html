@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vostok Studio | Interactive Generative Engine v11</title>
+    <title>Vostok Studio | Persistent Memory Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         /* === RESET & BASE === */
@@ -124,8 +124,8 @@
         <div class="command-center" id="commandCenter">
             
             <div class="header">
-                <span class="app-title">STUDIO ENGINE v11</span>
-                <span class="live-indicator"><span class="dot"></span> LIVE INTERACT</span>
+                <span class="app-title">STUDIO ENGINE v11.5</span>
+                <span class="live-indicator"><span class="dot"></span> FROST ETCHING</span>
             </div>
             
             <div class="readout">
@@ -219,7 +219,11 @@
         let kineticEngine = 'STRATA';
         let presetAction = 'LOAD'; 
 
-        // === MOUSE INTERACTION TRACKING ===
+        // === PERSISTENT MEMORY MAPS (FROST ETCHING) ===
+        let cols = 0, rows = 0;
+        let lifeMap = new Float32Array(0);
+        let intensityMap = new Float32Array(0);
+
         let mouseX = -1000, mouseY = -1000;
         let targetMouseX = -1000, targetMouseY = -1000;
 
@@ -229,7 +233,6 @@
             resetIdleTimer();
         });
 
-        // Ocultar el UI inactivo
         let idleTimer;
         function resetIdleTimer() {
             commandCenter.style.opacity = '1'; clearTimeout(idleTimer);
@@ -327,13 +330,35 @@
             noiseCtx.putImageData(imgData, 0, 0);
         }
 
-        function resize() { width = window.innerWidth; height = window.innerHeight; canvas.width = width; canvas.height = height; generateNoise(); }
+        function buildMemoryMap() {
+            cols = Math.ceil(width / gridSpacing) + 5;
+            rows = Math.ceil(height / gridSpacing) + 5;
+            let totalCells = cols * rows;
+            if (lifeMap.length !== totalCells) {
+                lifeMap = new Float32Array(totalCells);
+                intensityMap = new Float32Array(totalCells);
+            }
+        }
+
+        function resize() { 
+            width = window.innerWidth; height = window.innerHeight; 
+            canvas.width = width; canvas.height = height; 
+            generateNoise(); 
+            buildMemoryMap();
+        }
         window.addEventListener('resize', resize); resize();
 
         function updateUI() {
             let temp = parseInt(tempSlider.value); tempDisplay.textContent = `${temp}°`; tempValSub.textContent = `${temp}°C`;
             ringContainer.style.setProperty('--fill-pct', `${((temp + 89) / 89) * 100}%`);
-            gridSpacing = parseInt(sizeSlider.value); sizeValueDisplay.textContent = `${gridSpacing} PX`;
+            
+            let newSize = parseInt(sizeSlider.value);
+            if (newSize !== gridSpacing) {
+                gridSpacing = newSize;
+                sizeValueDisplay.textContent = `${gridSpacing} PX`;
+                buildMemoryMap(); // Re-crear mapa de memoria si cambia la escala
+            }
+            
             scaleValueDisplay.textContent = `${(parseInt(scaleSlider.value)/10).toFixed(1)}X`;
             chaosValueDisplay.textContent = `${chaosSlider.value}%`; speedValueDisplay.textContent = `${speedSlider.value}%`;
         }
@@ -342,14 +367,13 @@
         scaleSlider.addEventListener('input', updateUI); chaosSlider.addEventListener('input', updateUI); speedSlider.addEventListener('input', updateUI);
         bootPresets(); updateUI();
 
-        // === ENGINE ANIMATION DISPATCHER (AHORA INTERACTIVO) ===
+        // === ENGINE ANIMATION DISPATCHER (CON MEMORIA DE TRAZO) ===
         function draw() {
             ctx.fillStyle = paletteMode === 'BRAND' ? '#060c31' : document.getElementById('hex1').value;
             ctx.fillRect(0, 0, width, height);
 
-            // Suavizado del movimiento del mouse (Lerp)
-            mouseX += (targetMouseX - mouseX) * 0.08;
-            mouseY += (targetMouseY - mouseY) * 0.08;
+            mouseX += (targetMouseX - mouseX) * 0.15;
+            mouseY += (targetMouseY - mouseY) * 0.15;
 
             let coldFactor = Math.abs(parseInt(tempSlider.value)) / 89; 
             let windowStart = (1 - coldFactor) * 6;
@@ -370,25 +394,10 @@
                     
                     let rawIntensity = 0;
 
-                    // LÓGICA DE INTERACCIÓN LÍQUIDA DEL MOUSE
-                    let dxMouse = x - mouseX;
-                    let dyMouse = y - mouseY;
-                    let distMouse = Math.sqrt(dxMouse*dxMouse + dyMouse*dyMouse);
-                    // Radio de influencia (30% de la pantalla)
-                    let influenceRadius = Math.max(width, height) * 0.3; 
-                    let touchPerturbation = 0;
-
-                    if(distMouse < influenceRadius) {
-                        // Suavizado (Falloff) para que se mezcle natural con la cuadrícula
-                        let falloff = Math.pow(1 - (distMouse / influenceRadius), 2);
-                        // Crea una onda concéntrica desde el cursor que ondula con el tiempo
-                        touchPerturbation = falloff * 2.0 * Math.sin((distMouse * 0.015) - (time * 1.5));
-                    }
-
+                    // 1. CÁLCULO DE FÍSICA PURA (Sin remolinos falsos)
                     if (kineticEngine === 'STRATA') {
                         let nX = x * 0.0015 + windOffsetX, nY = y * 0.0015 + windOffsetY;
-                        // Agregamos la perturbación del mouse a la física de fluidos principal
-                        let flow = Math.sin(nX * 1.2 + time * 0.3) + Math.cos(nY * 1.4 - time * 0.2) + Math.sin((nX + nY) * 0.8 + time * 0.4) + touchPerturbation; 
+                        let flow = Math.sin(nX * 1.2 + time * 0.3) + Math.cos(nY * 1.4 - time * 0.2) + Math.sin((nX + nY) * 0.8 + time * 0.4); 
                         rawIntensity = (Math.sin(flow * waveScale * 1.8) + 1) / 2;
                     } 
                     else if (kineticEngine === 'VORTEX') {
@@ -399,7 +408,6 @@
 
                         let dx1 = (x - cX1) * 0.002, dy1 = (y - cY1) * 0.002;
                         let dist1 = Math.sqrt(dx1*dx1 + dy1*dy1), angle1 = Math.atan2(dy1, dx1);
-
                         let dx2 = (x - cX2) * 0.002, dy2 = (y - cY2) * 0.002;
                         let dist2 = Math.sqrt(dx2*dx2 + dy2*dy2), angle2 = Math.atan2(dy2, dx2);
 
@@ -407,9 +415,36 @@
                         let spiral2 = Math.cos(angle2 * 2.0 - dist2 * (waveScale * 1.5) + time * 0.6);
                         let tide = Math.sin((x * 0.001 - y * 0.001) + windOffsetX) * chaosFactor;
 
-                        // El mouse actúa como una fuerza gravitacional destructora sobre el vórtice
-                        let vortexMath = (spiral1 + spiral2 + tide + touchPerturbation) / 2.2;
+                        let vortexMath = (spiral1 + spiral2 + tide) / 2.2;
                         rawIntensity = Math.max(0, Math.min(1, (vortexMath + 1) / 2));
+                    }
+
+                    // 2. SISTEMA DE MEMORIA "FROST ETCHING"
+                    // Mapeamos el punto exacto en la cuadrícula de memoria
+                    let colIdx = Math.floor((x + gridSpacing) / gridSpacing);
+                    let rowIdx = Math.floor((y + gridSpacing) / gridSpacing);
+                    let memIdx = rowIdx * cols + colIdx;
+
+                    let dxMouse = x - mouseX;
+                    let dyMouse = y - mouseY;
+                    let distMouse = Math.sqrt(dxMouse*dxMouse + dyMouse*dyMouse);
+
+                    // Si el cursor pasa cerca de esta celda, FIJAMOS la memoria
+                    if (distMouse < 65) {
+                        if (memIdx >= 0 && memIdx < lifeMap.length) {
+                            lifeMap[memIdx] = 1.0; 
+                            // Congelamos la intensidad del pixel y la hacemos brillar ligeramente (+0.25) para que parezca un trazo intencional
+                            intensityMap[memIdx] = Math.min(1.0, rawIntensity + 0.25);
+                        }
+                    }
+
+                    // Si esta celda tiene memoria activa (ha sido tocada), anulamos la física base y dibujamos la memoria
+                    if (memIdx >= 0 && memIdx < lifeMap.length && lifeMap[memIdx] > 0.001) {
+                        // Blend matemático entre el trazo congelado y el fluido que se mueve debajo
+                        rawIntensity = (intensityMap[memIdx] * lifeMap[memIdx]) + (rawIntensity * (1.0 - lifeMap[memIdx]));
+                        
+                        // Velocidad de descongelamiento (0.985 tarda un par de segundos en desaparecer)
+                        lifeMap[memIdx] *= 0.985; 
                     }
 
                     if (rawIntensity < 0.02) continue; 
@@ -419,9 +454,7 @@
                     if (currentMorphology === 'CELLS') {
                         ctx.beginPath(); ctx.arc(x, y, rawIntensity * (gridSpacing * 1.45), 0, Math.PI * 2); ctx.fill();
                     } else if (currentMorphology === 'ISOBARS') {
-                        ctx.save(); ctx.translate(x, y); 
-                        // El mouse también afecta la rotación de las líneas
-                        ctx.rotate((rawIntensity * 4.0) + windOffsetX + touchPerturbation); 
+                        ctx.save(); ctx.translate(x, y); ctx.rotate((rawIntensity * 4.0) + windOffsetX); 
                         ctx.fillRect(-(gridSpacing * 1.8)/2, -(rawIntensity * (gridSpacing * 0.6))/2, gridSpacing * 1.8, rawIntensity * (gridSpacing * 0.6)); ctx.restore();
                     } else if (currentMorphology === 'MATRIX') {
                         let bs = rawIntensity * (gridSpacing * 1.4); ctx.fillRect(x - bs/2, y - bs/2, bs, bs);
@@ -441,7 +474,7 @@
             let realW = window.innerWidth, realH = window.innerHeight; let rW = ratioStr === '16:9' ? 16 : 4, rH = ratioStr === '16:9' ? 9 : 5;
             let cropWidth = realW, cropHeight = (realW / rW) * rH; if (cropHeight > realH) { cropHeight = realH; cropWidth = (realH / rH) * rW; }
             tempCanvas.width = cropWidth; tempCanvas.height = cropHeight; let sX = (realW - cropWidth) / 2, sY = (realH - cropHeight) / 2;
-            tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH); const link = document.createElement('a'); link.download = `vostok_interactive_${ratioStr.replace(':','x')}.png`; link.href = tempCanvas.toDataURL('image/png', 1.0); link.click();
+            tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH); const link = document.createElement('a'); link.download = `vostok_etch_${ratioStr.replace(':','x')}.png`; link.href = tempCanvas.toDataURL('image/png', 1.0); link.click();
         }
 
         function exportVideo() {
@@ -456,7 +489,7 @@
             
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.download = `vostok_hq_interactive.webm`; link.href = url; link.click(); URL.revokeObjectURL(url); btn.classList.remove('recording'); btn.textContent = `DOWNLOAD VIDEO`;
+                const blob = new Blob(recordedChunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.download = `vostok_hq_etch.webm`; link.href = url; link.click(); URL.revokeObjectURL(url); btn.classList.remove('recording'); btn.textContent = `DOWNLOAD VIDEO`;
             }; 
             mediaRecorder.start(); setTimeout(() => mediaRecorder.stop(), 10000); 
         }
