@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vostok Studio | Professional Generative Engine v10.1</title>
+    <title>Vostok Studio | Interactive Generative Engine v11</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         /* === RESET & BASE === */
@@ -12,7 +12,7 @@
             background-color: #060c31; color: #BAD5EF;
             font-family: 'Space Mono', monospace;
             overflow: hidden; height: 100vh; width: 100vw;
-            text-transform: uppercase; font-size: 12px;
+            text-transform: uppercase; font-size: 12px; cursor: crosshair;
         }
 
         #fluidCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
@@ -35,6 +35,7 @@
             padding: 1.2rem; width: 340px; display: flex; flex-direction: column; gap: 0.85rem;
             box-shadow: 0 0 40px rgba(6, 12, 49, 0.9); backdrop-filter: blur(12px);
             transition: opacity 0.6s ease; opacity: 1; max-height: 95vh; overflow-y: auto;
+            cursor: default;
         }
 
         .command-center::-webkit-scrollbar { width: 4px; }
@@ -123,8 +124,8 @@
         <div class="command-center" id="commandCenter">
             
             <div class="header">
-                <span class="app-title">STUDIO ENGINE v10.1</span>
-                <span class="live-indicator"><span class="dot"></span> LIVE</span>
+                <span class="app-title">STUDIO ENGINE v11</span>
+                <span class="live-indicator"><span class="dot"></span> LIVE INTERACT</span>
             </div>
             
             <div class="readout">
@@ -161,7 +162,6 @@
                     <button class="tab-btn active" onclick="setPaletteMode('BRAND', this)">GREY GOOSE</button>
                     <button class="tab-btn" onclick="setPaletteMode('CUSTOM', this)">6-HEX CUSTOM</button>
                 </div>
-                
                 <div class="hex-grid" id="customColorBox" style="display: none;">
                     <div class="hex-slot"><input type="color" id="col1" value="#060C31"><input type="text" id="hex1" value="#060C31" maxlength="7"></div>
                     <div class="hex-slot"><input type="color" id="col2" value="#162876"><input type="text" id="hex2" value="#162876" maxlength="7"></div>
@@ -219,13 +219,23 @@
         let kineticEngine = 'STRATA';
         let presetAction = 'LOAD'; 
 
-        // Auto Fade UI
+        // === MOUSE INTERACTION TRACKING ===
+        let mouseX = -1000, mouseY = -1000;
+        let targetMouseX = -1000, targetMouseY = -1000;
+
+        window.addEventListener('mousemove', (e) => {
+            targetMouseX = e.clientX;
+            targetMouseY = e.clientY;
+            resetIdleTimer();
+        });
+
+        // Ocultar el UI inactivo
         let idleTimer;
         function resetIdleTimer() {
             commandCenter.style.opacity = '1'; clearTimeout(idleTimer);
             idleTimer = setTimeout(() => { commandCenter.style.opacity = '0'; }, 2500); 
         }
-        window.addEventListener('mousemove', resetIdleTimer); window.addEventListener('mousedown', resetIdleTimer); resetIdleTimer(); 
+        window.addEventListener('mousedown', resetIdleTimer); resetIdleTimer(); 
 
         function setKinetic(type, elem) {
             kineticEngine = type;
@@ -245,20 +255,12 @@
             rebuildActivePalette();
         }
 
-        // 6-HEX INPUT SYNC
         for(let i=1; i<=6; i++) {
-            let hexInp = document.getElementById('hex'+i);
-            let colInp = document.getElementById('col'+i);
-            hexInp.addEventListener('input', (e) => {
-                let val = e.target.value;
-                if(/^#[0-9A-F]{6}$/i.test(val)) { colInp.value = val; rebuildActivePalette(); }
-            });
-            colInp.addEventListener('input', (e) => {
-                hexInp.value = e.target.value.toUpperCase(); rebuildActivePalette();
-            });
+            let hexInp = document.getElementById('hex'+i); let colInp = document.getElementById('col'+i);
+            hexInp.addEventListener('input', (e) => { let val = e.target.value; if(/^#[0-9A-F]{6}$/i.test(val)) { colInp.value = val; rebuildActivePalette(); }});
+            colInp.addEventListener('input', (e) => { hexInp.value = e.target.value.toUpperCase(); rebuildActivePalette(); });
         }
 
-        // Official Grey Goose Palette Matrices
         const brandHexPalette = ['#060c31', '#0d1952', '#162876', '#213a9c', '#2d4dc4', '#3a5eeb', '#3e63ff', '#5e81ff', '#7da0ff', '#9dbfff', '#bcddff', '#dcf1ff', '#ffffff'];
         const brandRgbPalette = brandHexPalette.map(h => ({ r: parseInt(h.slice(1,3),16), g: parseInt(h.slice(3,5),16), b: parseInt(h.slice(5,7),16) }));
         let activeRgbPalette = [...brandRgbPalette];
@@ -266,34 +268,19 @@
         function rebuildActivePalette() {
             if (paletteMode === 'BRAND') { activeRgbPalette = [...brandRgbPalette]; document.body.style.backgroundColor = '#060c31'; return; }
             const hexToRgb = h => {
-                let clean = h.replace('#', '');
-                if(clean.length !== 6) clean = '000000';
+                let clean = h.replace('#', ''); if(clean.length !== 6) clean = '000000';
                 return { r: parseInt(clean.slice(0,2),16), g: parseInt(clean.slice(2,4),16), b: parseInt(clean.slice(4,6),16) };
             };
-
-            let baseColors = [];
-            for(let i=1; i<=6; i++) { baseColors.push(hexToRgb(document.getElementById('hex'+i).value)); }
-
+            let baseColors = []; for(let i=1; i<=6; i++) { baseColors.push(hexToRgb(document.getElementById('hex'+i).value)); }
             let newPal = [];
             for(let i=0; i<13; i++) {
-                let t = i / 12; 
-                let scaledT = t * 5; 
-                let idx = Math.floor(scaledT);
-                let frac = scaledT - idx;
-
-                if(idx >= 5) {
-                    newPal.push(baseColors[5]);
-                } else {
+                let scaledT = (i / 12) * 5; let idx = Math.floor(scaledT); let frac = scaledT - idx;
+                if(idx >= 5) { newPal.push(baseColors[5]); } else {
                     let c1 = baseColors[idx], c2 = baseColors[idx+1];
-                    newPal.push({
-                        r: Math.round(c1.r + (c2.r - c1.r)*frac),
-                        g: Math.round(c1.g + (c2.g - c1.g)*frac),
-                        b: Math.round(c1.b + (c2.b - c1.b)*frac)
-                    });
+                    newPal.push({ r: Math.round(c1.r + (c2.r - c1.r)*frac), g: Math.round(c1.g + (c2.g - c1.g)*frac), b: Math.round(c1.b + (c2.b - c1.b)*frac) });
                 }
             }
-            activeRgbPalette = newPal;
-            document.body.style.backgroundColor = document.getElementById('hex1').value;
+            activeRgbPalette = newPal; document.body.style.backgroundColor = document.getElementById('hex1').value;
         }
 
         function getMappedColor(scaledT, alpha = 1) {
@@ -302,7 +289,6 @@
             return `rgba(${Math.round(c1.r + (c2.r - c1.r) * frac)}, ${Math.round(c1.g + (c2.g - c1.g) * frac)}, ${Math.round(c1.b + (c2.b - c1.b) * frac)}, ${alpha})`;
         }
 
-        // PRESET LOCAL STORAGE BANK
         function togglePresetMode() {
             const btn = document.getElementById('presetModeBtn');
             if(presetAction === 'LOAD') { presetAction = 'SAVE'; btn.textContent = 'MODE: OVERWRITE'; btn.classList.add('save-mode'); } 
@@ -310,58 +296,28 @@
         }
 
         function handlePreset(slot) {
-            const slotKey = 'vostok_v10_' + slot;
-            const btnElem = document.getElementById('btnP' + slot);
-
+            const slotKey = 'vostok_v11_' + slot; const btnElem = document.getElementById('btnP' + slot);
             if(presetAction === 'SAVE') {
-                let customName = prompt("NAME THIS PRESET (MAX 8 CHARS):", "P" + slot + "_CSTM");
-                if(!customName) return;
+                let customName = prompt("NAME THIS PRESET (MAX 8 CHARS):", "P" + slot + "_CSTM"); if(!customName) return;
                 customName = customName.toUpperCase().slice(0, 8);
-
                 const presetData = {
-                    name: customName, temp: tempSlider.value, size: sizeSlider.value, 
-                    scale: scaleSlider.value, chaos: chaosSlider.value, speed: speedSlider.value,
-                    morph: currentMorphology, palMode: paletteMode, kinetic: kineticEngine,
-                    h1: document.getElementById('hex1').value, h2: document.getElementById('hex2').value,
-                    h3: document.getElementById('hex3').value, h4: document.getElementById('hex4').value,
-                    h5: document.getElementById('hex5').value, h6: document.getElementById('hex6').value
+                    name: customName, temp: tempSlider.value, size: sizeSlider.value, scale: scaleSlider.value, chaos: chaosSlider.value, speed: speedSlider.value, morph: currentMorphology, palMode: paletteMode, kinetic: kineticEngine, h1: document.getElementById('hex1').value, h2: document.getElementById('hex2').value, h3: document.getElementById('hex3').value, h4: document.getElementById('hex4').value, h5: document.getElementById('hex5').value, h6: document.getElementById('hex6').value
                 };
-                
-                localStorage.setItem(slotKey, JSON.stringify(presetData)); btnElem.textContent = customName;
-                togglePresetMode(); 
-            } 
-            else {
-                let data = localStorage.getItem(slotKey);
-                if(!data) { alert("MEMORY SLOT " + slot + " IS EMPTY"); return; }
+                localStorage.setItem(slotKey, JSON.stringify(presetData)); btnElem.textContent = customName; togglePresetMode(); 
+            } else {
+                let data = localStorage.getItem(slotKey); if(!data) { alert("MEMORY SLOT " + slot + " IS EMPTY"); return; }
                 try {
-                    data = JSON.parse(data);
-                    tempSlider.value = data.temp; sizeSlider.value = data.size; 
-                    scaleSlider.value = data.scale; chaosSlider.value = data.chaos; 
-                    if(data.speed) speedSlider.value = data.speed;
-                    
-                    document.getElementById('col1').value = data.h1; document.getElementById('hex1').value = data.h1;
-                    document.getElementById('col2').value = data.h2; document.getElementById('hex2').value = data.h2;
-                    document.getElementById('col3').value = data.h3; document.getElementById('hex3').value = data.h3;
-                    document.getElementById('col4').value = data.h4; document.getElementById('hex4').value = data.h4;
-                    document.getElementById('col5').value = data.h5; document.getElementById('hex5').value = data.h5;
-                    document.getElementById('col6').value = data.h6; document.getElementById('hex6').value = data.h6;
-                    
+                    data = JSON.parse(data); tempSlider.value = data.temp; sizeSlider.value = data.size; scaleSlider.value = data.scale; chaosSlider.value = data.chaos; if(data.speed) speedSlider.value = data.speed;
+                    document.getElementById('col1').value = data.h1; document.getElementById('hex1').value = data.h1; document.getElementById('col2').value = data.h2; document.getElementById('hex2').value = data.h2; document.getElementById('col3').value = data.h3; document.getElementById('hex3').value = data.h3; document.getElementById('col4').value = data.h4; document.getElementById('hex4').value = data.h4; document.getElementById('col5').value = data.h5; document.getElementById('hex5').value = data.h5; document.getElementById('col6').value = data.h6; document.getElementById('hex6').value = data.h6;
                     document.querySelectorAll('.selector-wrapper .tab-btn').forEach(b => {
-                        if(b.textContent.includes(data.kinetic) || b.textContent.includes(data.morph) || (data.palMode === 'BRAND' && b.textContent.includes('GREY GOOSE')) || (data.palMode === 'CUSTOM' && b.textContent.includes('6-HEX'))) {
-                            b.click();
-                        }
+                        if(b.textContent.includes(data.kinetic) || b.textContent.includes(data.morph) || (data.palMode === 'BRAND' && b.textContent.includes('GREY GOOSE')) || (data.palMode === 'CUSTOM' && b.textContent.includes('6-HEX'))) { b.click(); }
                     });
                     updateUI(); rebuildActivePalette();
                 } catch(e) { console.error(e); }
             }
         }
 
-        function bootPresets() {
-            for(let i=1; i<=4; i++) {
-                let d = localStorage.getItem('vostok_v10_' + i);
-                if(d) { try { document.getElementById('btnP'+i).textContent = JSON.parse(d).name; }catch(e){} }
-            }
-        }
+        function bootPresets() { for(let i=1; i<=4; i++) { let d = localStorage.getItem('vostok_v11_' + i); if(d) { try { document.getElementById('btnP'+i).textContent = JSON.parse(d).name; }catch(e){} } } }
 
         const noiseCanvas = document.createElement('canvas'); const noiseCtx = noiseCanvas.getContext('2d');
         function generateNoise() {
@@ -379,20 +335,21 @@
             ringContainer.style.setProperty('--fill-pct', `${((temp + 89) / 89) * 100}%`);
             gridSpacing = parseInt(sizeSlider.value); sizeValueDisplay.textContent = `${gridSpacing} PX`;
             scaleValueDisplay.textContent = `${(parseInt(scaleSlider.value)/10).toFixed(1)}X`;
-            chaosValueDisplay.textContent = `${chaosSlider.value}%`;
-            speedValueDisplay.textContent = `${speedSlider.value}%`;
+            chaosValueDisplay.textContent = `${chaosSlider.value}%`; speedValueDisplay.textContent = `${speedSlider.value}%`;
         }
         
         tempSlider.addEventListener('input', updateUI); sizeSlider.addEventListener('input', updateUI); 
-        scaleSlider.addEventListener('input', updateUI); chaosSlider.addEventListener('input', updateUI); 
-        speedSlider.addEventListener('input', updateUI);
-        
+        scaleSlider.addEventListener('input', updateUI); chaosSlider.addEventListener('input', updateUI); speedSlider.addEventListener('input', updateUI);
         bootPresets(); updateUI();
 
-        // === ENGINE ANIMATION DISPATCHER ===
+        // === ENGINE ANIMATION DISPATCHER (AHORA INTERACTIVO) ===
         function draw() {
             ctx.fillStyle = paletteMode === 'BRAND' ? '#060c31' : document.getElementById('hex1').value;
             ctx.fillRect(0, 0, width, height);
+
+            // Suavizado del movimiento del mouse (Lerp)
+            mouseX += (targetMouseX - mouseX) * 0.08;
+            mouseY += (targetMouseY - mouseY) * 0.08;
 
             let coldFactor = Math.abs(parseInt(tempSlider.value)) / 89; 
             let windowStart = (1 - coldFactor) * 6;
@@ -413,9 +370,25 @@
                     
                     let rawIntensity = 0;
 
+                    // LÓGICA DE INTERACCIÓN LÍQUIDA DEL MOUSE
+                    let dxMouse = x - mouseX;
+                    let dyMouse = y - mouseY;
+                    let distMouse = Math.sqrt(dxMouse*dxMouse + dyMouse*dyMouse);
+                    // Radio de influencia (30% de la pantalla)
+                    let influenceRadius = Math.max(width, height) * 0.3; 
+                    let touchPerturbation = 0;
+
+                    if(distMouse < influenceRadius) {
+                        // Suavizado (Falloff) para que se mezcle natural con la cuadrícula
+                        let falloff = Math.pow(1 - (distMouse / influenceRadius), 2);
+                        // Crea una onda concéntrica desde el cursor que ondula con el tiempo
+                        touchPerturbation = falloff * 2.0 * Math.sin((distMouse * 0.015) - (time * 1.5));
+                    }
+
                     if (kineticEngine === 'STRATA') {
                         let nX = x * 0.0015 + windOffsetX, nY = y * 0.0015 + windOffsetY;
-                        let flow = Math.sin(nX * 1.2 + time * 0.3) + Math.cos(nY * 1.4 - time * 0.2) + Math.sin((nX + nY) * 0.8 + time * 0.4); 
+                        // Agregamos la perturbación del mouse a la física de fluidos principal
+                        let flow = Math.sin(nX * 1.2 + time * 0.3) + Math.cos(nY * 1.4 - time * 0.2) + Math.sin((nX + nY) * 0.8 + time * 0.4) + touchPerturbation; 
                         rawIntensity = (Math.sin(flow * waveScale * 1.8) + 1) / 2;
                     } 
                     else if (kineticEngine === 'VORTEX') {
@@ -434,7 +407,8 @@
                         let spiral2 = Math.cos(angle2 * 2.0 - dist2 * (waveScale * 1.5) + time * 0.6);
                         let tide = Math.sin((x * 0.001 - y * 0.001) + windOffsetX) * chaosFactor;
 
-                        let vortexMath = (spiral1 + spiral2 + tide) / 2.2;
+                        // El mouse actúa como una fuerza gravitacional destructora sobre el vórtice
+                        let vortexMath = (spiral1 + spiral2 + tide + touchPerturbation) / 2.2;
                         rawIntensity = Math.max(0, Math.min(1, (vortexMath + 1) / 2));
                     }
 
@@ -445,7 +419,9 @@
                     if (currentMorphology === 'CELLS') {
                         ctx.beginPath(); ctx.arc(x, y, rawIntensity * (gridSpacing * 1.45), 0, Math.PI * 2); ctx.fill();
                     } else if (currentMorphology === 'ISOBARS') {
-                        ctx.save(); ctx.translate(x, y); ctx.rotate((rawIntensity * 4.0) + windOffsetX); 
+                        ctx.save(); ctx.translate(x, y); 
+                        // El mouse también afecta la rotación de las líneas
+                        ctx.rotate((rawIntensity * 4.0) + windOffsetX + touchPerturbation); 
                         ctx.fillRect(-(gridSpacing * 1.8)/2, -(rawIntensity * (gridSpacing * 0.6))/2, gridSpacing * 1.8, rawIntensity * (gridSpacing * 0.6)); ctx.restore();
                     } else if (currentMorphology === 'MATRIX') {
                         let bs = rawIntensity * (gridSpacing * 1.4); ctx.fillRect(x - bs/2, y - bs/2, bs, bs);
@@ -460,50 +436,29 @@
         }
         draw();
 
-        // HIGH-FIDELITY EXPORT SYSTEM
         function exportImage(ratioStr) {
             const tempCanvas = document.createElement('canvas'); const tCtx = tempCanvas.getContext('2d');
             let realW = window.innerWidth, realH = window.innerHeight; let rW = ratioStr === '16:9' ? 16 : 4, rH = ratioStr === '16:9' ? 9 : 5;
             let cropWidth = realW, cropHeight = (realW / rW) * rH; if (cropHeight > realH) { cropHeight = realH; cropWidth = (realH / rH) * rW; }
             tempCanvas.width = cropWidth; tempCanvas.height = cropHeight; let sX = (realW - cropWidth) / 2, sY = (realH - cropHeight) / 2;
-            tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH); const link = document.createElement('a'); link.download = `vostok_studio_${ratioStr.replace(':','x')}.png`; link.href = tempCanvas.toDataURL('image/png', 1.0); link.click();
+            tCtx.drawImage(canvas, 0, 0, width, height, -sX, -sY, realW, realH); const link = document.createElement('a'); link.download = `vostok_interactive_${ratioStr.replace(':','x')}.png`; link.href = tempCanvas.toDataURL('image/png', 1.0); link.click();
         }
 
-        // UPGRADED HIGH-QUALITY VIDEO CAPTURE (60 FPS & 25 Mbps Lossless-Like Bitrate)
         function exportVideo() {
-            const btn = document.getElementById('btnVideo'); 
-            if (btn.classList.contains('recording')) return; 
+            const btn = document.getElementById('btnVideo'); if (btn.classList.contains('recording')) return; 
+            btn.classList.add('recording'); btn.textContent = `RECORDING (10s)...`; recordedChunks = [];
             
-            btn.classList.add('recording'); 
-            btn.textContent = `RECORDING (10s)...`; 
-            recordedChunks = [];
-            
-            // Fuerza la captura de la línea de tiempo a 60 FPS reales
             const stream = canvas.captureStream(60); 
+            let options = { videoBitsPerSecond: 50000000 };
             
-            // Establece un bitrate de 25 Megabits por segundo para mitigar el artifacting en degradados oscuros
-            let options = { videoBitsPerSecond: 25000000 };
-            
-            try {
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9', ...options });
-            } catch (e) {
-                mediaRecorder = new MediaRecorder(stream, options);
-            }
+            try { mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9', ...options }); } 
+            catch (e) { mediaRecorder = new MediaRecorder(stream, options); }
             
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' }); 
-                const url = URL.createObjectURL(blob); 
-                const link = document.createElement('a'); 
-                link.download = `vostok_hq_render.webm`; 
-                link.href = url; link.click(); 
-                URL.revokeObjectURL(url); 
-                btn.classList.remove('recording'); 
-                btn.textContent = `DOWNLOAD VIDEO`;
+                const blob = new Blob(recordedChunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.download = `vostok_hq_interactive.webm`; link.href = url; link.click(); URL.revokeObjectURL(url); btn.classList.remove('recording'); btn.textContent = `DOWNLOAD VIDEO`;
             }; 
-            
-            mediaRecorder.start(); 
-            setTimeout(() => mediaRecorder.stop(), 10000); // Duración extendida a 10 segundos
+            mediaRecorder.start(); setTimeout(() => mediaRecorder.stop(), 10000); 
         }
     </script>
 </body>
